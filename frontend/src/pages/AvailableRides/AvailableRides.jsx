@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Navigation, Clock, Users, ArrowRight, Search as SearchIcon, Fuel, Star, ShieldCheck, X, Eye, Car, UserCheck } from 'lucide-react';
 import { searchRides, bookRide } from '../../lib/api';
@@ -230,7 +231,7 @@ export default function AvailableRides() {
       )}
 
       {/* Ride Details Modal */}
-      {selectedRide && (
+      {selectedRide && createPortal(
         <div className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 animate-scale-in max-h-[90vh] overflow-y-auto border border-neutral-200 relative">
             
@@ -387,7 +388,8 @@ export default function AvailableRides() {
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
