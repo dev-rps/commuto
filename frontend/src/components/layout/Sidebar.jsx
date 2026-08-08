@@ -1,41 +1,39 @@
-import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, Car, Calendar, MapPin, Wallet,
-  BarChart3, Settings, History, Navigation, LogOut, ChevronRight, ShieldCheck,
+  BarChart3, Settings, History, Navigation, LogOut, ChevronRight, ShieldCheck, Building2, Code,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { formatINR } from '../../lib/utils';
 
 const superAdminNav = [
-  { to: '/superadmin',     icon: ShieldCheck,     label: 'Super Admin Control' },
-  { to: '/dashboard',      icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/superadmin',     icon: Code,            label: 'Developer Control' },
+  { to: '/dashboard',      icon: LayoutDashboard, label: 'Commuter View' },
   { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
   { to: '/rides/offer',    icon: Navigation,      label: 'Offer a Ride' },
-  { to: '/trips',          icon: Calendar,        label: 'My Trips' },
-  { to: '/reports',        icon: BarChart3,       label: 'Reports' },
+  { to: '/reports',        icon: BarChart3,       label: 'System Analytics' },
   { to: '/wallet',         icon: Wallet,          label: 'Wallet' },
-  { to: '/settings',       icon: Settings,        label: 'Settings' },
-];
-
-const employeeNav = [
-  { to: '/dashboard',      icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
-  { to: '/rides/offer',    icon: Navigation,      label: 'Offer a Ride' },
-  { to: '/trips',          icon: Calendar,        label: 'My Trips' },
-  { to: '/vehicles',       icon: Car,             label: 'My Vehicle' },
-  { to: '/wallet',         icon: Wallet,          label: 'Wallet' },
-  { to: '/rides/history',  icon: History,         label: 'Ride History' },
-  { to: '/places',         icon: MapPin,          label: 'Saved Places' },
   { to: '/settings',       icon: Settings,        label: 'Settings' },
 ];
 
 const adminNav = [
-  { to: '/dashboard',      icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/admin-dashboard',icon: Building2,       label: 'Company Admin Panel' },
+  { to: '/reports',        icon: BarChart3,       label: 'Fleet & Fuel Analytics' },
+  { to: '/dashboard',      icon: LayoutDashboard, label: 'Commuter View' },
   { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
   { to: '/rides/offer',    icon: Navigation,      label: 'Offer a Ride' },
   { to: '/trips',          icon: Calendar,        label: 'My Trips' },
   { to: '/vehicles',       icon: Car,             label: 'My Vehicle' },
-  { to: '/reports',        icon: BarChart3,       label: 'Reports' },
+  { to: '/wallet',         icon: Wallet,          label: 'Wallet' },
+  { to: '/places',         icon: MapPin,          label: 'Saved Places' },
+  { to: '/settings',       icon: Settings,        label: 'Settings' },
+];
+
+const employeeNav = [
+  { to: '/dashboard',      icon: LayoutDashboard, label: 'Commuter Dashboard' },
+  { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
+  { to: '/rides/offer',    icon: Navigation,      label: 'Offer a Ride' },
+  { to: '/trips',          icon: Calendar,        label: 'My Trips' },
+  { to: '/vehicles',       icon: Car,             label: 'My Vehicle' },
   { to: '/wallet',         icon: Wallet,          label: 'Wallet' },
   { to: '/rides/history',  icon: History,         label: 'Ride History' },
   { to: '/places',         icon: MapPin,          label: 'Saved Places' },
@@ -131,7 +129,7 @@ export function Sidebar({ open, onClose }) {
                 <Wallet className="w-3.5 h-3.5 text-white/80" />
                 <span className="text-xs font-medium text-white/90">Wallet</span>
               </div>
-              <span className="text-sm font-bold text-white">{formatINR(user.walletBalance)}</span>
+              <span className="text-sm font-bold text-white">{formatINR(user?.walletBalance || 0)}</span>
             </div>
           )}
 
@@ -146,7 +144,7 @@ export function Sidebar({ open, onClose }) {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-neutral-900 truncate leading-none">{user?.name}</p>
               <p className="text-[11px] text-neutral-500 mt-0.5 font-medium">
-                {user?.role === 'COMPANY_ADMIN' ? 'Admin' : 'Employee'}
+                {user?.role === 'SUPER_ADMIN' ? 'Developer' : user?.role === 'COMPANY_ADMIN' ? 'Company Admin' : 'Employee'}
               </p>
             </div>
             <ChevronRight className="w-4 h-4 text-neutral-400 shrink-0" />

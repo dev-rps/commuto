@@ -306,7 +306,7 @@ export default function Login() {
                   onClick={() => setForm({ email: 'superadmin@gmail.com', password: 'pass1234' })}
                   className="px-2.5 py-1 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 font-medium transition-colors"
                 >
-                  👑 Super Admin
+                  💻 Developer / Super Admin
                 </button>
                 <button
                   type="button"

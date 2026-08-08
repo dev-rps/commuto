@@ -82,6 +82,9 @@ export function Topbar({ onMenuClick, title }) {
               <div className="px-4 py-2.5 border-b border-neutral-100">
                 <p className="text-sm font-semibold text-neutral-900 truncate">{user?.name}</p>
                 <p className="text-xs text-neutral-500 truncate mt-0.5">{user?.email}</p>
+                <span className="mt-1.5 inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200">
+                  {user?.role === 'SUPER_ADMIN' ? '💻 Platform Developer' : user?.role === 'COMPANY_ADMIN' ? '🏢 Company Admin' : '👤 Employee'}
+                </span>
               </div>
               <button
                 onClick={() => { navigate('/settings'); setDropdownOpen(false); }}
