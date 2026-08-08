@@ -102,6 +102,9 @@ export async function getWallet() {
   if (USE_MOCKS) { await delay(); return { balance: mock.currentUser.walletBalance, transactions: mock.walletTransactions }; }
   const { data } = await api.get('/wallet/me'); return data;
 }
+export async function getWalletTransactions() {
+  return getWallet();
+}
 export async function rechargeWallet(amount) {
   if (USE_MOCKS) { await delay(); const newBalance = mock.currentUser.walletBalance + amount; return { walletBalance: newBalance, message: `Wallet recharged with ₹${amount}`, transaction: { id: `wt-${Date.now()}`, userId: mock.currentUser.id, type: 'RECHARGE', amount, balanceAfter: newBalance } }; }
   const { data } = await api.post('/wallet/recharge', { amount }); return data;
@@ -136,6 +139,10 @@ export async function getReportSummary() {
   if (USE_MOCKS) { await delay(); return mock.reportSummary; }
   const { data } = await api.get('/reports/summary'); return data;
 }
+export async function getPlatformOverview() {
+  if (USE_MOCKS) { await delay(); return mock.platformOverview || {}; }
+  const { data } = await api.get('/reports/platform-overview'); return data;
+}
 
 // ── Saved Places ──────────────────────────────────────────────────
 export async function getSavedPlaces() {
@@ -145,6 +152,9 @@ export async function getSavedPlaces() {
 export async function createSavedPlace(payload) {
   if (USE_MOCKS) { await delay(); return { ...payload, id: `place-${Date.now()}`, userId: mock.currentUser.id }; }
   const { data } = await api.post('/saved-places', payload); return data.place;
+}
+export async function addSavedPlace(payload) {
+  return createSavedPlace(payload);
 }
 export async function deleteSavedPlace(placeId) {
   if (USE_MOCKS) { await delay(100); return { id: placeId }; }

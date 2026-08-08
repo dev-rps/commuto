@@ -1,10 +1,21 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, Car, Calendar, MapPin, Wallet,
-  BarChart3, Settings, History, Navigation, LogOut, ChevronRight,
+  BarChart3, Settings, History, Navigation, LogOut, ChevronRight, ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { formatINR } from '../../lib/utils';
+
+const superAdminNav = [
+  { to: '/superadmin',     icon: ShieldCheck,     label: 'Super Admin Control' },
+  { to: '/dashboard',      icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
+  { to: '/rides/offer',    icon: Navigation,      label: 'Offer a Ride' },
+  { to: '/trips',          icon: Calendar,        label: 'My Trips' },
+  { to: '/reports',        icon: BarChart3,       label: 'Reports' },
+  { to: '/wallet',         icon: Wallet,          label: 'Wallet' },
+  { to: '/settings',       icon: Settings,        label: 'Settings' },
+];
 
 const employeeNav = [
   { to: '/dashboard',      icon: LayoutDashboard, label: 'Dashboard' },
@@ -34,7 +45,7 @@ const adminNav = [
 export function Sidebar({ open, onClose }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const nav = user?.role === 'COMPANY_ADMIN' ? adminNav : employeeNav;
+  const nav = user?.role === 'SUPER_ADMIN' ? superAdminNav : user?.role === 'COMPANY_ADMIN' ? adminNav : employeeNav;
   const initials = user?.name?.split(' ').map((p) => p[0]).slice(0, 2).join('') || '?';
 
   const handleLogout = () => {

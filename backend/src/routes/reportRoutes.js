@@ -10,8 +10,15 @@ router.use(requireAuth);
 // GET /api/reports/summary — admin only, org-scoped
 router.get(
   "/summary",
-  requireRole(["COMPANY_ADMIN"]),
+  requireRole(["COMPANY_ADMIN", "SUPER_ADMIN"]),
   reportController.getSummary
+);
+
+// GET /api/reports/platform-overview — super admin global metrics & database overview
+router.get(
+  "/platform-overview",
+  requireRole(["SUPER_ADMIN"]),
+  reportController.getPlatformOverview
 );
 
 module.exports = router;

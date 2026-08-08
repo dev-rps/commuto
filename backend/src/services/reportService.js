@@ -148,6 +148,10 @@ class ReportService {
       fuelEfficiencyTrends,
     };
   }
+
+  async getPlatformOverview() {
+    return reportRepository.getPlatformOverview();
+  }
 }
 
 module.exports = new ReportService();

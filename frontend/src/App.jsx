@@ -22,6 +22,7 @@ const RideHistory     = lazy(() => import('./pages/RideHistory/RideHistory'));
 const Reports         = lazy(() => import('./pages/Reports/Reports'));
 const Settings        = lazy(() => import('./pages/Settings/Settings'));
 const SavedPlaces     = lazy(() => import('./pages/SavedPlaces/SavedPlaces'));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdmin/SuperAdminDashboard'));
 
 function PageLoader() {
   return (
@@ -42,10 +43,12 @@ function AppRoutes() {
   const { user, loading } = useAuth();
   if (loading) return <PageLoader />;
 
+  const homeDestination = user?.role === 'SUPER_ADMIN' ? '/superadmin' : '/dashboard';
+
   return (
     <Routes>
       <Route path="/" element={<Suspense fallback={<PageLoader />}><Splash /></Suspense>} />
-      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Suspense fallback={<PageLoader />}><Login /></Suspense>} />
+      <Route path="/login" element={user ? <Navigate to={homeDestination} replace /> : <Suspense fallback={<PageLoader />}><Login /></Suspense>} />
       <Route
         element={
           <ProtectedRoute>
@@ -55,6 +58,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
+        <Route path="/superadmin"     element={<Suspense fallback={<PageLoader />}><SuperAdminDashboard /></Suspense>} />
         <Route path="/dashboard"      element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
         <Route path="/rides/find"     element={<Suspense fallback={<PageLoader />}><FindRide /></Suspense>} />
         <Route path="/rides/confirm"  element={<Suspense fallback={<PageLoader />}><RouteConfirmation /></Suspense>} />

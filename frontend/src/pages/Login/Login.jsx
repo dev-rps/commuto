@@ -294,12 +294,49 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Demo hint */}
+          {/* Quick Preset Accounts */}
           {mode === 'login' && (
-            <div className="mt-5 rounded-xl bg-primary-50 border border-primary-100 px-4 py-3 text-xs text-primary-700">
-              <p className="font-semibold mb-0.5">Demo (mock mode):</p>
-              <p>Employee — any email + any password</p>
-              <p>Admin — email containing "admin"</p>
+            <div className="mt-5 rounded-xl bg-neutral-50 border border-neutral-200 p-3.5 text-xs">
+              <p className="font-semibold text-neutral-800 mb-2 flex items-center justify-between">
+                <span>⚡ Quick Demo Logins (Password: <code className="bg-neutral-200 px-1 py-0.5 rounded text-neutral-900 font-mono">pass1234</code>)</span>
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setForm({ email: 'superadmin@gmail.com', password: 'pass1234' })}
+                  className="px-2.5 py-1 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 font-medium transition-colors"
+                >
+                  👑 Super Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ email: 'admin@infosys.com', password: 'pass1234' })}
+                  className="px-2.5 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-medium transition-colors"
+                >
+                  🏢 Infosys Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ email: 'neha@infosys.com', password: 'pass1234' })}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-medium transition-colors"
+                >
+                  🚗 Neha (Infosys)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ email: 'suraj@tcs.com', password: 'pass1234' })}
+                  className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-medium transition-colors"
+                >
+                  🚗 Suraj (TCS)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ email: 'amit@wipro.com', password: 'pass1234' })}
+                  className="px-2.5 py-1 rounded-lg bg-cyan-100 hover:bg-cyan-200 text-cyan-800 font-medium transition-colors"
+                >
+                  🚗 Amit (Wipro)
+                </button>
+              </div>
             </div>
           )}
         </div>

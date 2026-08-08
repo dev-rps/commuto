@@ -1,19 +1,29 @@
 require("dotenv/config");
 const { PrismaClient } = require("@prisma/client");
 const { PrismaPg } = require("@prisma/adapter-pg");
-const crypto = require("crypto");
+const bcrypt = require("bcrypt");
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-
-// Simple password hash (SHA-256) — NOT for production, fine for seed/demo
-function hashPassword(plain) {
-  return crypto.createHash("sha256").update(plain).digest("hex");
-}
-
 async function main() {
-  console.log("🌱 Seeding Commuto database...\n");
+  console.log("🌱 Seeding Commuto database with updated userbase and bcrypt passwords...\n");
+
+  // Clean existing data for clean seed execution
+  await prisma.auditLog.deleteMany({});
+  await prisma.chatMessage.deleteMany({});
+  await prisma.walletTransaction.deleteMany({});
+  await prisma.payment.deleteMany({});
+  await prisma.booking.deleteMany({});
+  await prisma.rideLocation.deleteMany({});
+  await prisma.ride.deleteMany({});
+  await prisma.savedPlace.deleteMany({});
+  await prisma.vehicle.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.organization.deleteMany({});
+
+  // Hash password for all users: 'pass1234'
+  const defaultHash = await bcrypt.hash("pass1234", 10);
 
   // ─── Organizations ───────────────────────────────────────────────
   const org1 = await prisma.organization.create({
@@ -34,212 +44,135 @@ async function main() {
 
   const org3 = await prisma.organization.create({
     data: {
-      name: "Tata Consultancy Services",
-      fuelCostPerL: 105.00,
-      costPerKm: 8.50,
+      name: "TCS (Tata Consultancy Services)",
+      fuelCostPerL: 102.00,
+      costPerKm: 7.80,
     },
   });
 
-  console.log("✅ 3 Organizations created");
+  console.log("✅ 3 Organizations created (Infosys, Wipro, TCS)");
 
   // ─── Users ───────────────────────────────────────────────────────
-  const defaultHash = hashPassword("password123");
+  // 1. Super Admin
+  const superAdmin = await prisma.user.create({
+    data: {
+      organizationId: null,
+      name: "Super Admin",
+      email: "superadmin@gmail.com",
+      passwordHash: defaultHash,
+      role: "SUPER_ADMIN",
+      walletBalance: 10000.00,
+    },
+  });
 
-  const admin1 = await prisma.user.create({
+  // 2. Company Admins
+  const adminInfosys = await prisma.user.create({
     data: {
       organizationId: org1.id,
       name: "Arjun Mehta",
-      email: "arjun.mehta@infosys.com",
+      email: "admin@infosys.com",
       passwordHash: defaultHash,
       role: "COMPANY_ADMIN",
-      walletBalance: 0,
+      walletBalance: 1000.00,
     },
   });
 
-  const admin2 = await prisma.user.create({
+  const adminWipro = await prisma.user.create({
     data: {
       organizationId: org2.id,
       name: "Priya Sharma",
-      email: "priya.sharma@wipro.com",
+      email: "admin@wipro.com",
       passwordHash: defaultHash,
       role: "COMPANY_ADMIN",
-      walletBalance: 0,
+      walletBalance: 1000.00,
     },
   });
 
-  // Employees — Org 1 (Infosys)
-  const emp1 = await prisma.user.create({
+  const adminTcs = await prisma.user.create({
+    data: {
+      organizationId: org3.id,
+      name: "Rajesh Kumar",
+      email: "admin@tcs.com",
+      passwordHash: defaultHash,
+      role: "COMPANY_ADMIN",
+      walletBalance: 1000.00,
+    },
+  });
+
+  // 3. Employees (Specific Requested Accounts)
+  const neha = await prisma.user.create({
+    data: {
+      organizationId: org1.id,
+      name: "Neha Sharma",
+      email: "neha@infosys.com",
+      passwordHash: defaultHash,
+      role: "EMPLOYEE",
+      walletBalance: 500.00,
+    },
+  });
+
+  const suraj = await prisma.user.create({
+    data: {
+      organizationId: org3.id,
+      name: "Suraj Verma",
+      email: "suraj@tcs.com",
+      passwordHash: defaultHash,
+      role: "EMPLOYEE",
+      walletBalance: 600.00,
+    },
+  });
+
+  const amit = await prisma.user.create({
+    data: {
+      organizationId: org2.id,
+      name: "Amit Patel",
+      email: "amit@wipro.com",
+      passwordHash: defaultHash,
+      role: "EMPLOYEE",
+      walletBalance: 450.00,
+    },
+  });
+
+  // Additional Employees
+  const rahul = await prisma.user.create({
     data: {
       organizationId: org1.id,
       name: "Rahul Nair",
       email: "rahul.nair@infosys.com",
       passwordHash: defaultHash,
-      walletBalance: 500.00,
+      role: "EMPLOYEE",
+      walletBalance: 350.00,
     },
   });
 
-  const emp2 = await prisma.user.create({
+  const sneha = await prisma.user.create({
     data: {
       organizationId: org1.id,
       name: "Sneha Reddy",
       email: "sneha.reddy@infosys.com",
       passwordHash: defaultHash,
-      walletBalance: 350.00,
+      role: "EMPLOYEE",
+      walletBalance: 400.00,
     },
   });
 
-  const emp3 = await prisma.user.create({
-    data: {
-      organizationId: org1.id,
-      name: "Vikram Joshi",
-      email: "vikram.joshi@infosys.com",
-      passwordHash: defaultHash,
-      walletBalance: 200.00,
-    },
-  });
-
-  const emp4 = await prisma.user.create({
-    data: {
-      organizationId: org1.id,
-      name: "Ananya Gupta",
-      email: "ananya.gupta@infosys.com",
-      passwordHash: defaultHash,
-      walletBalance: 750.00,
-    },
-  });
-
-  // Employees — Org 2 (Wipro)
-  const emp5 = await prisma.user.create({
+  const karthik = await prisma.user.create({
     data: {
       organizationId: org2.id,
       name: "Karthik Iyer",
       email: "karthik.iyer@wipro.com",
       passwordHash: defaultHash,
-      walletBalance: 600.00,
-    },
-  });
-
-  const emp6 = await prisma.user.create({
-    data: {
-      organizationId: org2.id,
-      name: "Divya Krishnan",
-      email: "divya.krishnan@wipro.com",
-      passwordHash: defaultHash,
-      walletBalance: 450.00,
-    },
-  });
-
-  const emp7 = await prisma.user.create({
-    data: {
-      organizationId: org2.id,
-      name: "Rohan Patel",
-      email: "rohan.patel@wipro.com",
-      passwordHash: defaultHash,
+      role: "EMPLOYEE",
       walletBalance: 300.00,
     },
   });
 
-  const emp8 = await prisma.user.create({
-    data: {
-      organizationId: org2.id,
-      name: "Meera Bhat",
-      email: "meera.bhat@wipro.com",
-      passwordHash: defaultHash,
-      walletBalance: 150.00,
-    },
-  });
-
-  // TCS Admin
-  const admin3 = await prisma.user.create({
-    data: {
-      organizationId: org3.id,
-      name: "Sanjay Kumar",
-      email: "sanjay.kumar@tcs.com",
-      passwordHash: defaultHash,
-      role: "COMPANY_ADMIN",
-      walletBalance: 0,
-    },
-  });
-
-  // TCS Employees
-  const emp9 = await prisma.user.create({
-    data: {
-      organizationId: org3.id,
-      name: "Meenakshi Iyer",
-      email: "meenakshi.iyer@tcs.com",
-      passwordHash: defaultHash,
-      walletBalance: 400.00,
-    },
-  });
-
-  const emp10 = await prisma.user.create({
-    data: {
-      organizationId: org3.id,
-      name: "Rohan Sharma",
-      email: "rohan.sharma@tcs.com",
-      passwordHash: defaultHash,
-      walletBalance: 650.00,
-    },
-  });
-
-  const emp11 = await prisma.user.create({
-    data: {
-      organizationId: org3.id,
-      name: "Aditi Rao",
-      email: "aditi.rao@tcs.com",
-      passwordHash: defaultHash,
-      walletBalance: 120.00,
-    },
-  });
-
-  // Infosys Employees (Extra)
-  const emp12 = await prisma.user.create({
-    data: {
-      organizationId: org1.id,
-      name: "Amit Patel",
-      email: "amit.patel@infosys.com",
-      passwordHash: defaultHash,
-      walletBalance: 450.00,
-    },
-  });
-
-  const emp13 = await prisma.user.create({
-    data: {
-      organizationId: org1.id,
-      name: "Neha Sen",
-      email: "neha.sen@infosys.com",
-      passwordHash: defaultHash,
-      walletBalance: 280.00,
-    },
-  });
-
-  // Wipro Employees (Extra)
-  const emp14 = await prisma.user.create({
-    data: {
-      organizationId: org2.id,
-      name: "Sunita Das",
-      email: "sunita.das@wipro.com",
-      passwordHash: defaultHash,
-      walletBalance: 320.00,
-    },
-  });
-
-  const emp15 = await prisma.user.create({
-    data: {
-      organizationId: org2.id,
-      name: "Rajesh Kumar",
-      email: "rajesh.kumar@wipro.com",
-      passwordHash: defaultHash,
-      walletBalance: 500.00,
-    },
-  });
-
-  console.log("✅ 3 Admins + 15 Employees created");
+  console.log("✅ 1 Super Admin + 3 Company Admins + 6 Employees created (Password: pass1234)");
 
   // ─── Vehicles ────────────────────────────────────────────────────
   const v1 = await prisma.vehicle.create({
     data: {
-      driverId: emp1.id,
+      driverId: neha.id,
       model: "Maruti Suzuki Swift",
       registrationNo: "KA-01-AB-1234",
       seatingCap: 4,
@@ -249,7 +182,7 @@ async function main() {
 
   const v2 = await prisma.vehicle.create({
     data: {
-      driverId: emp2.id,
+      driverId: suraj.id,
       model: "Hyundai Creta",
       registrationNo: "KA-01-CD-5678",
       seatingCap: 5,
@@ -259,7 +192,7 @@ async function main() {
 
   const v3 = await prisma.vehicle.create({
     data: {
-      driverId: emp5.id,
+      driverId: amit.id,
       model: "Honda City",
       registrationNo: "KA-02-EF-9012",
       seatingCap: 4,
@@ -269,72 +202,31 @@ async function main() {
 
   const v4 = await prisma.vehicle.create({
     data: {
-      driverId: emp6.id,
-      model: "Toyota Innova Crysta",
-      registrationNo: "KA-03-GH-3456",
-      seatingCap: 7,
-      fuelEfficiencyKmpl: 12.0,
-    },
-  });
-
-  const v5 = await prisma.vehicle.create({
-    data: {
-      driverId: emp4.id,
+      driverId: rahul.id,
       model: "Tata Nexon EV",
       registrationNo: "KA-01-EV-7890",
-      seatingCap: 4,
-      fuelEfficiencyKmpl: null, // EV — no fuel efficiency
-    },
-  });
-
-  const v6 = await prisma.vehicle.create({
-    data: {
-      driverId: emp9.id,
-      model: "Honda Elevate",
-      registrationNo: "KA-03-MP-5678",
-      seatingCap: 4,
-      fuelEfficiencyKmpl: 15.0,
-    },
-  });
-
-  const v7 = await prisma.vehicle.create({
-    data: {
-      driverId: emp10.id,
-      model: "Tata Tiago EV",
-      registrationNo: "KA-05-EV-4321",
       seatingCap: 4,
       fuelEfficiencyKmpl: null,
     },
   });
 
-  const v8 = await prisma.vehicle.create({
-    data: {
-      driverId: emp12.id,
-      model: "Mahindra XUV700",
-      registrationNo: "KA-51-ND-9999",
-      seatingCap: 6,
-      fuelEfficiencyKmpl: 11.5,
-    },
-  });
+  console.log("✅ 4 Vehicles created");
 
-  console.log("✅ 8 Vehicles created");
-
-  // ─── Rides (Bangalore coordinates) ──────────────────────────────
-  // Real Bangalore landmarks for sensible map rendering
+  // ─── Rides ───────────────────────────────────────────────────────
   const now = new Date();
   const hourMs = 60 * 60 * 1000;
 
   const ride1 = await prisma.ride.create({
     data: {
-      driverId: emp1.id,
+      driverId: neha.id,
       vehicleId: v1.id,
       pickupLoc: "Koramangala, Bangalore",
       pickupLat: 12.9352,
       pickupLng: 77.6245,
-      destination: "Electronic City, Bangalore",
+      destination: "Electronic City (Infosys), Bangalore",
       destLat: 12.8399,
       destLng: 77.6770,
-      departureTime: new Date(now.getTime() + 2 * hourMs), // 2h from now
+      departureTime: new Date(now.getTime() + 2 * hourMs),
       availableSeats: 3,
       farePerSeat: 80.00,
       distanceKm: 16.5,
@@ -344,15 +236,15 @@ async function main() {
 
   const ride2 = await prisma.ride.create({
     data: {
-      driverId: emp2.id,
+      driverId: suraj.id,
       vehicleId: v2.id,
       pickupLoc: "Whitefield, Bangalore",
       pickupLat: 12.9698,
       pickupLng: 77.7500,
-      destination: "MG Road, Bangalore",
-      destLat: 12.9756,
-      destLng: 77.6065,
-      departureTime: new Date(now.getTime() + 5 * hourMs), // 5h from now
+      destination: "TCS Campus, Electronic City",
+      destLat: 12.8450,
+      destLng: 77.6620,
+      departureTime: new Date(now.getTime() + 4 * hourMs),
       availableSeats: 4,
       farePerSeat: 120.00,
       distanceKm: 22.0,
@@ -362,137 +254,29 @@ async function main() {
 
   const ride3 = await prisma.ride.create({
     data: {
-      driverId: emp5.id,
+      driverId: amit.id,
       vehicleId: v3.id,
       pickupLoc: "Indiranagar, Bangalore",
       pickupLat: 12.9784,
       pickupLng: 77.6408,
-      destination: "Marathahalli, Bangalore",
-      destLat: 12.9591,
-      destLng: 77.6974,
-      departureTime: new Date(now.getTime() - 3 * hourMs), // 3h ago (past)
+      destination: "Wipro Sarjapur Campus, Bangalore",
+      destLat: 12.9100,
+      destLng: 77.6850,
+      departureTime: new Date(now.getTime() - 2 * hourMs),
       availableSeats: 0,
-      farePerSeat: 60.00,
-      distanceKm: 8.5,
-      status: "COMPLETED",
-    },
-  });
-
-  const ride4 = await prisma.ride.create({
-    data: {
-      driverId: emp6.id,
-      vehicleId: v4.id,
-      pickupLoc: "Jayanagar, Bangalore",
-      pickupLat: 12.9299,
-      pickupLng: 77.5838,
-      destination: "Hebbal, Bangalore",
-      destLat: 13.0358,
-      destLng: 77.5970,
-      departureTime: new Date(now.getTime() - 1 * hourMs), // 1h ago (in progress)
-      availableSeats: 4,
-      farePerSeat: 100.00,
-      distanceKm: 14.0,
-      status: "IN_PROGRESS",
-    },
-  });
-
-  const ride5 = await prisma.ride.create({
-    data: {
-      driverId: emp4.id,
-      vehicleId: v5.id,
-      pickupLoc: "HSR Layout, Bangalore",
-      pickupLat: 12.9116,
-      pickupLng: 77.6389,
-      destination: "Yelahanka, Bangalore",
-      destLat: 13.1007,
-      destLng: 77.5963,
-      departureTime: new Date(now.getTime() + 24 * hourMs), // tomorrow
-      availableSeats: 3,
-      farePerSeat: 150.00,
-      distanceKm: 28.0,
-      status: "PUBLISHED",
-    },
-  });
-
-  const ride6 = await prisma.ride.create({
-    data: {
-      driverId: emp1.id,
-      vehicleId: v1.id,
-      pickupLoc: "BTM Layout, Bangalore",
-      pickupLat: 12.9166,
-      pickupLng: 77.6101,
-      destination: "Whitefield, Bangalore",
-      destLat: 12.9698,
-      destLng: 77.7500,
-      departureTime: new Date(now.getTime() - 24 * hourMs), // yesterday (past)
-      availableSeats: 1,
-      farePerSeat: 110.00,
-      distanceKm: 20.0,
-      status: "COMPLETED",
-    },
-  });
-
-  const ride7 = await prisma.ride.create({
-    data: {
-      driverId: emp9.id,
-      vehicleId: v6.id,
-      pickupLoc: "Manyata Tech Park, Bangalore",
-      pickupLat: 13.0451,
-      pickupLng: 77.6266,
-      destination: "Majestic, Bangalore",
-      destLat: 12.9779,
-      destLng: 77.5724,
-      departureTime: new Date(now.getTime() + 4 * hourMs), // 4h from now
-      availableSeats: 3,
-      farePerSeat: 90.00,
-      distanceKm: 13.0,
-      status: "PUBLISHED",
-    },
-  });
-
-  const ride8 = await prisma.ride.create({
-    data: {
-      driverId: emp10.id,
-      vehicleId: v7.id,
-      pickupLoc: "Electronic City Phase 1, Bangalore",
-      pickupLat: 12.8452,
-      pickupLng: 77.6602,
-      destination: "Sarjapur Road, Bangalore",
-      destLat: 12.9118,
-      destLng: 77.6835,
-      departureTime: new Date(now.getTime() - 0.5 * hourMs), // 30 mins ago (in progress)
-      availableSeats: 3,
       farePerSeat: 70.00,
-      distanceKm: 15.0,
-      status: "IN_PROGRESS",
-    },
-  });
-
-  const ride9 = await prisma.ride.create({
-    data: {
-      driverId: emp12.id,
-      vehicleId: v8.id,
-      pickupLoc: "Bannerghatta Road, Bangalore",
-      pickupLat: 12.8956,
-      pickupLng: 77.5997,
-      destination: "Koramangala, Bangalore",
-      destLat: 12.9352,
-      destLng: 77.6245,
-      departureTime: new Date(now.getTime() - 6 * hourMs), // 6h ago (past)
-      availableSeats: 0,
-      farePerSeat: 50.00,
-      distanceKm: 8.0,
+      distanceKm: 12.0,
       status: "COMPLETED",
     },
   });
 
-  console.log("✅ 9 Rides created (3 past, 2 in-progress, 4 future)");
+  console.log("✅ 3 Rides created");
 
   // ─── Bookings ────────────────────────────────────────────────────
   const booking1 = await prisma.booking.create({
     data: {
       rideId: ride1.id,
-      passengerId: emp3.id,
+      passengerId: sneha.id,
       seatsBooked: 1,
       totalFare: 80.00,
       status: "BOOKED",
@@ -502,7 +286,7 @@ async function main() {
   const booking2 = await prisma.booking.create({
     data: {
       rideId: ride2.id,
-      passengerId: emp7.id,
+      passengerId: karthik.id,
       seatsBooked: 2,
       totalFare: 240.00,
       status: "PAYMENT_PENDING",
@@ -512,199 +296,62 @@ async function main() {
   const booking3 = await prisma.booking.create({
     data: {
       rideId: ride3.id,
-      passengerId: emp3.id,
-      seatsBooked: 1,
-      totalFare: 60.00,
-      status: "PAYMENT_COMPLETED",
-    },
-  });
-
-  const booking4 = await prisma.booking.create({
-    data: {
-      rideId: ride3.id,
-      passengerId: emp8.id,
-      seatsBooked: 2,
-      totalFare: 120.00,
-      status: "PAYMENT_COMPLETED",
-    },
-  });
-
-  const booking5 = await prisma.booking.create({
-    data: {
-      rideId: ride4.id,
-      passengerId: emp3.id,
-      seatsBooked: 1,
-      totalFare: 100.00,
-      status: "BOOKED",
-    },
-  });
-
-  const booking6 = await prisma.booking.create({
-    data: {
-      rideId: ride6.id,
-      passengerId: emp5.id,
-      seatsBooked: 2,
-      totalFare: 220.00,
-      status: "CANCELLED",
-    },
-  });
-
-  const booking7 = await prisma.booking.create({
-    data: {
-      rideId: ride5.id,
-      passengerId: emp7.id,
-      seatsBooked: 1,
-      totalFare: 150.00,
-      status: "BOOKED",
-    },
-  });
-
-  const booking8 = await prisma.booking.create({
-    data: {
-      rideId: ride7.id,
-      passengerId: emp11.id,
-      seatsBooked: 1,
-      totalFare: 90.00,
-      status: "BOOKED",
-    },
-  });
-
-  const booking9 = await prisma.booking.create({
-    data: {
-      rideId: ride8.id,
-      passengerId: emp4.id, // Infosys employee booking TCS ride (cross-org)
+      passengerId: neha.id,
       seatsBooked: 1,
       totalFare: 70.00,
-      status: "BOOKED",
-    },
-  });
-
-  const booking10 = await prisma.booking.create({
-    data: {
-      rideId: ride9.id,
-      passengerId: emp1.id,
-      seatsBooked: 2,
-      totalFare: 100.00,
       status: "PAYMENT_COMPLETED",
     },
   });
 
-  console.log("✅ 10 Bookings created (mixed statuses)");
+  console.log("✅ 3 Bookings created");
 
   // ─── Payments ────────────────────────────────────────────────────
   await prisma.payment.create({
     data: {
       bookingId: booking3.id,
       method: "WALLET",
-      amount: 60.00,
+      amount: 70.00,
       status: "SUCCESS",
-    },
-  });
-
-  await prisma.payment.create({
-    data: {
-      bookingId: booking4.id,
-      method: "UPI",
-      amount: 120.00,
-      status: "SUCCESS",
-      gatewayRefId: "pay_test_upi_001",
+      gatewayRefId: "pay_wallet_001",
     },
   });
 
   await prisma.payment.create({
     data: {
       bookingId: booking1.id,
-      method: "CARD",
+      method: "UPI",
       amount: 80.00,
       status: "PENDING",
-      gatewayRefId: "order_test_card_002",
+      gatewayRefId: "pay_upi_002",
     },
   });
 
-  await prisma.payment.create({
-    data: {
-      bookingId: booking10.id,
-      method: "WALLET",
-      amount: 100.00,
-      status: "SUCCESS",
-    },
-  });
+  console.log("✅ 2 Payments created");
 
-  console.log("✅ 4 Payments created");
-
-  // ─── Wallet Transactions (recharges so balances aren't zero) ───
-  const walletUsers = [
-    { user: emp1, balance: 500.00 },
-    { user: emp2, balance: 350.00 },
-    { user: emp4, balance: 750.00 },
-    { user: emp5, balance: 600.00 },
-    { user: emp6, balance: 450.00 },
-    { user: emp7, balance: 300.00 },
-  ];
-
-  for (const { user, balance } of walletUsers) {
+  // ─── Wallet Transactions ─────────────────────────────────────────
+  const usersForWallet = [neha, suraj, amit, rahul, sneha, karthik];
+  for (const u of usersForWallet) {
     await prisma.walletTransaction.create({
       data: {
-        userId: user.id,
+        userId: u.id,
         type: "RECHARGE",
-        amount: balance,
-        balanceAfter: balance,
+        amount: Number(u.walletBalance),
+        balanceAfter: Number(u.walletBalance),
       },
     });
   }
 
-  // Add a RIDE_PAYMENT txn for the completed booking3
   await prisma.walletTransaction.create({
     data: {
-      userId: emp3.id,
+      userId: neha.id,
       type: "RIDE_PAYMENT",
-      amount: 60.00,
-      balanceAfter: 140.00,
+      amount: 70.00,
+      balanceAfter: 430.00,
     },
   });
 
-  const newWalletUsers = [
-    { user: emp9, balance: 400.00 },
-    { user: emp10, balance: 650.00 },
-    { user: emp11, balance: 120.00 },
-    { user: emp12, balance: 450.00 },
-    { user: emp13, balance: 280.00 },
-    { user: emp14, balance: 320.00 },
-    { user: emp15, balance: 500.00 },
-  ];
-
-  for (const { user, balance } of newWalletUsers) {
-    await prisma.walletTransaction.create({
-      data: {
-        userId: user.id,
-        type: "RECHARGE",
-        amount: balance,
-        balanceAfter: balance,
-      },
-    });
-  }
-
-  // Add a RIDE_PAYMENT txn for the completed booking10 (Rahul Nair paid Amit Patel)
-  await prisma.walletTransaction.create({
-    data: {
-      userId: emp1.id,
-      type: "RIDE_PAYMENT",
-      amount: 100.00,
-      balanceAfter: 400.00, // Rahul Nair started with 500, paid 100
-    },
-  });
-
-  console.log("✅ 15 WalletTransactions created (13 recharges + 2 ride payments)");
-
-  // ─── Summary ─────────────────────────────────────────────────────
-  console.log("\n🎉 Seed complete! Summary:");
-  console.log("   Organizations: 3");
-  console.log("   Users: 18 (3 admins + 15 employees)");
-  console.log("   Vehicles: 8");
-  console.log("   Rides: 9");
-  console.log("   Bookings: 10");
-  console.log("   Payments: 4");
-  console.log("   WalletTransactions: 15");
+  console.log("✅ Wallet Transactions created");
+  console.log("\n🎉 Seed completed successfully!");
 }
 
 main()

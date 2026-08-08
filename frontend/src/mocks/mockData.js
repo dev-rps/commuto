@@ -104,3 +104,13 @@ export const reportSummary = {
     { month: '2026-08', totalDistanceKm: 28.5, totalFuelConsumedL: 1.43, avgEfficiencyKmpl: 19.93, tripCount: 2 },
   ],
 };
+
+export const platformOverview = {
+  orgs: organizations,
+  usersCount: 10,
+  vehiclesCount: 4,
+  rides: rides,
+  bookings: bookings,
+  payments: payments,
+  walletTxns: walletTransactions,
+};
