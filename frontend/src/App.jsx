@@ -23,6 +23,7 @@ const RideHistory     = lazy(() => import('./pages/RideHistory/RideHistory'));
 const Reports         = lazy(() => import('./pages/Reports/Reports'));
 const Settings        = lazy(() => import('./pages/Settings/Settings'));
 const SavedPlaces     = lazy(() => import('./pages/SavedPlaces/SavedPlaces'));
+const Leaderboard       = lazy(() => import('./pages/Leaderboard/Leaderboard'));
 const SuperAdminDashboard = lazy(() => import('./pages/SuperAdmin/SuperAdminDashboard'));
 const CompanyAdminDashboard = lazy(() => import('./pages/CompanyAdmin/CompanyAdminDashboard'));
 
@@ -80,9 +81,12 @@ function AppRoutes() {
         <Route path="/wallet"         element={<Suspense fallback={<PageLoader />}><PaymentWallet /></Suspense>} />
         <Route path="/rides/history"  element={<Suspense fallback={<PageLoader />}><RideHistory /></Suspense>} />
         <Route path="/reports"        element={<Suspense fallback={<PageLoader />}><Reports /></Suspense>} />
+        <Route path="/leaderboard"    element={<Suspense fallback={<PageLoader />}><Leaderboard /></Suspense>} />
         <Route path="/settings"       element={<Suspense fallback={<PageLoader />}><Settings /></Suspense>} />
+
         <Route path="/places"         element={<Suspense fallback={<PageLoader />}><SavedPlaces /></Suspense>} />
       </Route>
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

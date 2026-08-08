@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, Clock, Users, Wallet, Car, Navigation, ChevronRight, MapPin, ArrowRight, Sparkles } from 'lucide-react';
-import { getMyVehicles, publishRide } from '../../lib/api';
+import { getMyVehicles, publishRide, createRecurringRide } from '../../lib/api';
 import { FieldError, LocationAutocomplete } from '../../components';
 import { SkeletonCard } from '../../components/Skeleton';
 import { useToast } from '../../context/ToastContext';
@@ -19,6 +19,7 @@ export default function OfferRide() {
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep]           = useState(0);
   const [errors, setErrors]       = useState({});
+  const [isRecurring, setIsRecurring] = useState(false);
 
   const routeState = location.state || {};
 
@@ -100,12 +101,26 @@ export default function OfferRide() {
         farePerSeat: Number(form.farePerSeat),
         distanceKm: Number(form.distanceKm) || null,
       });
-      toast.success('Ride published! Colleagues can now book it 🚗');
+
+      if (isRecurring) {
+        await createRecurringRide({
+          vehicleId: form.vehicleId,
+          pickupLoc: form.pickupLoc, pickupLat: form.pickupLat, pickupLng: form.pickupLng,
+          destination: form.destination, destLat: form.destLat, destLng: form.destLng,
+          departureTime: form.time,
+          daysOfWeek: "MON,TUE,WED,THU,FRI",
+          availableSeats: Number(form.availableSeats),
+          farePerSeat: Number(form.farePerSeat),
+        });
+      }
+
+      toast.success(isRecurring ? 'Ride published & saved as recurring weekday commute subscription! 🔄' : 'Ride published! Colleagues can now book it 🚗');
       setTimeout(() => navigate('/trips'), 1200);
     } catch (err) {
       toast.error(err.message || 'Failed to publish ride');
     } finally { setSubmitting(false); }
   };
+
 
   const selectedVehicle = vehicles.find((v) => v.id === form.vehicleId);
 
@@ -324,8 +339,25 @@ export default function OfferRide() {
                     </p>
                   </div>
                 )}
+
+                {/* Recurring Weekday Commute Toggle */}
+                <div className="p-4 rounded-xl border border-primary-100 bg-primary-50/50 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-neutral-900">Set as Recurring Weekday Commute</h4>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      Auto-publish this ride every Monday to Friday at {form.time || 'your chosen time'}
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isRecurring}
+                    onChange={(e) => setIsRecurring(e.target.checked)}
+                    className="w-5 h-5 text-primary rounded border-neutral-300 focus:ring-primary cursor-pointer"
+                  />
+                </div>
               </div>
             )}
+
 
             {/* Navigation buttons */}
             <div className={`flex gap-3 mt-6 ${step > 0 ? 'justify-between' : 'justify-end'}`}>

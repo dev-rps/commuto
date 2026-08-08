@@ -8,6 +8,7 @@ const SOCKET_EVENTS = {
   chatMessage: (rideId) => `chat:message:${rideId}`,
   notificationNew: (userId) => `notification:new:${userId}`,
   ridePublished: (orgId) => `ride:published:${orgId}`,
+  sosAlert: (rideId) => `ride:sos:${rideId}`,
 };
 
 /** @type {import("socket.io").Server | null} */
@@ -97,6 +98,27 @@ function setupSockets(io) {
       socket.leave(`ride:${rideId}`);
       console.log(`[Socket] ${userId} left ride:${rideId}`);
     });
+
+    socket.on("trigger:sos", ({ rideId, latitude, longitude }) => {
+      console.warn(`[EMERGENCY SOS] User ${userId} triggered SOS for ride ${rideId} at (${latitude}, ${longitude})`);
+      io.to(`ride:${rideId}`).emit(SOCKET_EVENTS.sosAlert(rideId), {
+        userId,
+        userName: socket.user.name || "Passenger",
+        latitude,
+        longitude,
+        timestamp: new Date().toISOString(),
+      });
+      if (organizationId) {
+        io.to(`admin:${organizationId}`).emit("sos:admin_alert", {
+          rideId,
+          userId,
+          userName: socket.user.name,
+          latitude,
+          longitude,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
   });
 
   console.log("⚡ Socket.IO initialized with JWT auth");
@@ -107,3 +129,4 @@ module.exports = {
   getIO,
   setupSockets,
 };
+

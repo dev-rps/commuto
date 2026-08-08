@@ -75,7 +75,7 @@ class ReportService {
         Math.round((v.fuelCost + v.distanceCost) * 100) / 100,
     }));
 
-    // ── Total fuel consumption ──────────────────────────────────────
+    // ── Total fuel & CO2 savings ───────────────────────────────────
     const totalFuelConsumed = vehicleBreakdown.reduce(
       (sum, v) => sum + v.fuelConsumedL,
       0
@@ -84,6 +84,13 @@ class ReportService {
       (sum, v) => sum + v.fuelCost,
       0
     );
+
+    // CO2 saved: 0.192 kg CO2 saved per passenger-km
+    const totalCo2SavedKg = rides.reduce((sum, r) => {
+      const passengerCount = r.bookings.reduce((bs, b) => bs + b.seatsBooked, 0);
+      return sum + (r.distanceKm || 0) * passengerCount * 0.192;
+    }, 0);
+    const treesEquivalent = totalCo2SavedKg / 21;
 
     // ── Fuel efficiency trends (monthly averages) ───────────────────
     const monthlyMap = {};
@@ -142,11 +149,62 @@ class ReportService {
         totalPassengers,
         totalFuelConsumed: Math.round(totalFuelConsumed * 100) / 100,
         totalFuelCost: Math.round(totalFuelCost * 100) / 100,
+        totalCo2SavedKg: Math.round(totalCo2SavedKg * 10) / 10,
+        treesEquivalent: Math.round(treesEquivalent * 10) / 10,
         costPerKm,
       },
       vehicleBreakdown,
       fuelEfficiencyTrends,
     };
+  }
+
+  async getLeaderboard(organizationId) {
+    const rides = await reportRepository.getCompletedRidesForOrg(organizationId);
+
+    const userMap = {};
+
+    rides.forEach((ride) => {
+      const driver = ride.driver;
+      if (!driver) return;
+
+      if (!userMap[driver.id]) {
+        userMap[driver.id] = {
+          id: driver.id,
+          name: driver.name,
+          email: driver.email,
+          ridesShared: 0,
+          passengersCarried: 0,
+          totalDistanceKm: 0,
+          co2SavedKg: 0,
+        };
+      }
+
+      const u = userMap[driver.id];
+      const passengerCount = ride.bookings.reduce((bs, b) => bs + b.seatsBooked, 0);
+      const dist = ride.distanceKm || 0;
+
+      u.ridesShared += 1;
+      u.passengersCarried += passengerCount;
+      u.totalDistanceKm += dist;
+      u.co2SavedKg += dist * passengerCount * 0.192;
+    });
+
+    const leaderboard = Object.values(userMap)
+      .map((u) => ({
+        ...u,
+        totalDistanceKm: Math.round(u.totalDistanceKm * 10) / 10,
+        co2SavedKg: Math.round(u.co2SavedKg * 10) / 10,
+        treesSaved: Math.round((u.co2SavedKg / 21) * 10) / 10,
+        badge:
+          u.co2SavedKg > 50
+            ? "Eco Master 🌿"
+            : u.co2SavedKg > 20
+            ? "Green Champion 🌱"
+            : "Carpool Hero 🚗",
+      }))
+      .sort((a, b) => b.co2SavedKg - a.co2SavedKg);
+
+    return leaderboard;
   }
 
   async getPlatformOverview() {
@@ -155,3 +213,4 @@ class ReportService {
 }
 
 module.exports = new ReportService();
+

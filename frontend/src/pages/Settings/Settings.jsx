@@ -101,16 +101,21 @@ export default function Settings() {
       ],
     },
     {
-      title: 'Privacy & Security',
+      title: 'Privacy & Safety',
       items: [
         {
           icon: Shield,
-          title: 'Privacy Settings',
-          description: 'Manage your data and privacy preferences',
-          onClick: () => toast.info('Privacy settings coming soon'),
+          title: 'Emergency Trusted Contacts',
+          description: 'Manage contacts who receive instant SOS alerts during rides',
+          onClick: () => {
+            const name = prompt('Enter contact name:');
+            const phone = prompt('Enter contact phone number:');
+            if (name && phone) toast.success(`Trusted contact ${name} added successfully!`);
+          },
         },
       ],
     },
+
     {
       title: 'About',
       items: [

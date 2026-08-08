@@ -9,6 +9,9 @@ const walletRoutes = require("./routes/walletRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const savedPlaceRoutes = require("./routes/savedPlaceRoutes");
 const organizationRoutes = require("./routes/organizationRoutes");
+const safetyRoutes = require("./routes/safetyRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
+const recurringRoutes = require("./routes/recurringRoutes");
 
 /**
  * Express app factory.
@@ -50,6 +53,10 @@ function createApp() {
   app.use("/api/reports", reportRoutes);
   app.use("/api/saved-places", savedPlaceRoutes);
   app.use("/api/organizations", organizationRoutes);
+  app.use("/api/safety", safetyRoutes);
+  app.use("/api/reviews", reviewRoutes);
+  app.use("/api/recurring", recurringRoutes);
+
 
   // ── 404 catch-all ─────────────────────────────────────────────────
   app.use((_req, res) => {

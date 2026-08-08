@@ -14,6 +14,9 @@ router.get(
   reportController.getSummary
 );
 
+// GET /api/reports/leaderboard — org-scoped employee leaderboard
+router.get("/leaderboard", reportController.getLeaderboard);
+
 // GET /api/reports/platform-overview — super admin global metrics & database overview
 router.get(
   "/platform-overview",
@@ -22,3 +25,4 @@ router.get(
 );
 
 module.exports = router;
+

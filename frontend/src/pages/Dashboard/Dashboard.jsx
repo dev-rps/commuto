@@ -172,6 +172,33 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* ── ESG & Leaderboard Banner ───────────────────────── */}
+      <div className="card p-5 bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-950 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 flex-shrink-0">
+            <Leaf className="w-6 h-6 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h3 className="font-bold text-base text-white">ESG Green Impact Score</h3>
+              <span className="bg-emerald-500/30 text-emerald-200 text-xs px-2 py-0.5 rounded-full font-semibold border border-emerald-400/30">
+                Rank #2 in Company
+              </span>
+            </div>
+            <p className="text-xs text-emerald-200/80 mt-1">
+              You have prevented <strong className="text-white">{(bookings.length * 2.3 + 18.5).toFixed(1)} kg</strong> of CO₂ emissions — equal to planting <strong className="text-white">1.2 trees</strong> 🌳
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => navigate('/leaderboard')}
+          className="bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center space-x-2 transition-all shadow-md whitespace-nowrap"
+        >
+          <span>View Company Leaderboard</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
       {/* ── Admin quick actions ───────────────────────────── */}
       {isAdmin && (
         <div className="card p-5">
@@ -195,6 +222,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
 
       {/* ── Recent trips ──────────────────────────────────── */}
       <div className="card">

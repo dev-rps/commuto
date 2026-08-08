@@ -18,6 +18,16 @@ class ReportController {
       next(err);
     }
   }
+
+  async getLeaderboard(req, res, next) {
+    try {
+      const leaderboard = await reportService.getLeaderboard(req.user.organizationId);
+      res.json({ leaderboard });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 module.exports = new ReportController();
+

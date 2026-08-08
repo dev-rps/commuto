@@ -74,6 +74,11 @@ model User {
   walletTxns     WalletTransaction[]
   chatMessages   ChatMessage[]
   auditLogs      AuditLog[]
+  trustedContacts TrustedContact[]
+  sosAlerts      SosAlert[]
+  reviewsGiven   Review[]     @relation("Reviewer")
+  reviewsReceived Review[]    @relation("Reviewee")
+  recurringRides RecurringRide[]
 
   @@index([organizationId])
 }
@@ -89,6 +94,7 @@ model Vehicle {
 
   driver             User     @relation(fields: [driverId], references: [id])
   rides              Ride[]
+  recurringRides     RecurringRide[]
 }
 
 model SavedPlace {
@@ -123,6 +129,8 @@ model Ride {
   bookings       Booking[]
   locations      RideLocation[]
   chatMessages   ChatMessage[]
+  sosAlerts      SosAlert[]
+  reviews        Review[]
 
   @@index([status])
   @@index([departureTime])
@@ -153,6 +161,7 @@ model Booking {
   ride           Ride          @relation(fields: [rideId], references: [id])
   passenger      User          @relation("PassengerBookings", fields: [passengerId], references: [id])
   payment        Payment?
+  reviews        Review[]
 
   @@index([passengerId])
 }
@@ -203,3 +212,65 @@ model AuditLog {
 
   user      User     @relation(fields: [userId], references: [id])
 }
+
+model TrustedContact {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  phone     String
+  email     String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model SosAlert {
+  id        String   @id @default(uuid())
+  rideId    String
+  userId    String
+  latitude  Float
+  longitude Float
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+
+  ride      Ride     @relation(fields: [rideId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  rideId      String
+  bookingId   String?
+  reviewerId  String
+  revieweeId  String
+  rating      Int
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  ride        Ride     @relation(fields: [rideId], references: [id])
+  booking     Booking? @relation(fields: [bookingId], references: [id])
+  reviewer    User     @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewee    User     @relation("Reviewee", fields: [revieweeId], references: [id])
+}
+
+model RecurringRide {
+  id             String   @id @default(uuid())
+  driverId       String
+  vehicleId      String
+  pickupLoc      String
+  pickupLat      Float
+  pickupLng      Float
+  destination    String
+  destLat        Float
+  destLng        Float
+  departureTime  String   // e.g. "08:30"
+  daysOfWeek     String   // e.g. "MON,TUE,WED,THU,FRI"
+  availableSeats Int
+  farePerSeat    Decimal  @db.Decimal(10, 2)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  driver         User     @relation(fields: [driverId], references: [id])
+  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id])
+}
+

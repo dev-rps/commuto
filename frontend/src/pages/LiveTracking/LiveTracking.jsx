@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Navigation, Clock, MapPin, ArrowLeft, Share2, CheckCircle } from 'lucide-react';
-import { RouteMap, Spinner, StatusBadge } from '../../components';
+import { Navigation, Clock, MapPin, ArrowLeft, Share2, CheckCircle, ShieldAlert, Star } from 'lucide-react';
+import { RouteMap, Spinner, StatusBadge, SosModal, ReviewModal } from '../../components';
 import { getRide, updateRideStatus, startRide, initiatePayment } from '../../lib/api';
 import { useSocket } from '../../context/SocketContext';
 import { useAuth } from '../../context/AuthContext';
@@ -65,6 +65,10 @@ export default function LiveTracking() {
   const [eta, setEta]           = useState(null);
   const intervalRef             = useRef(null);
 
+  // Safety & Review Modal States
+  const [showSosModal, setShowSosModal]       = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+
   // Payment Modal States
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentSuccess, setPaymentSuccess]     = useState(false);
@@ -72,6 +76,7 @@ export default function LiveTracking() {
   const [paying, setPaying]                     = useState(false);
 
   const animatedPos = useSmoothPosition(currentPos);
+
 
   useEffect(() => {
     getRide(rideId).then((r) => {
@@ -419,6 +424,38 @@ export default function LiveTracking() {
           </div>
         </div>
       )}
+
+      {/* Floating Emergency SOS Button */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <button
+          onClick={() => setShowSosModal(true)}
+          className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-3 rounded-full shadow-lg shadow-red-600/40 border-2 border-white transition-all transform hover:scale-105 animate-pulse"
+        >
+          <ShieldAlert className="w-5 h-5 text-white" />
+          <span>SOS SAFETY</span>
+        </button>
+      </div>
+
+      {/* Modals */}
+      {showSosModal && (
+        <SosModal
+          rideId={rideId}
+          currentLat={currentPos?.lat}
+          currentLng={currentPos?.lng}
+          onClose={() => setShowSosModal(false)}
+        />
+      )}
+
+      {showReviewModal && (
+        <ReviewModal
+          rideId={rideId}
+          revieweeName={ride?.driver?.name || 'Driver'}
+          revieweeId={ride?.driverId}
+          onClose={() => setShowReviewModal(false)}
+          onSuccess={() => toast.success('Thank you for rating your trip!')}
+        />
+      )}
     </div>
   );
 }
+

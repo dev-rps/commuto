@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Search, Car, Calendar, MapPin, Wallet, MessageSquare,
-  BarChart3, Settings, History, Navigation, LogOut, ChevronRight, Building2, Code,
+  BarChart3, Settings, History, Navigation, LogOut, ChevronRight, Building2, Code, Trophy,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useUnread } from '../../context/UnreadContext';
@@ -10,6 +10,7 @@ import { formatINR } from '../../lib/utils';
 const superAdminNav = [
   { to: '/superadmin',     icon: Code,            label: 'Developer & Users Control' },
   { to: '/dashboard',      icon: LayoutDashboard, label: 'Commuter View' },
+  { to: '/leaderboard',    icon: Trophy,          label: 'Eco Leaderboard' },
   { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
   { to: '/rides/offer',    icon: Navigation,      label: 'Offer a Ride' },
   { to: '/chat/ride-004',  icon: MessageSquare,   label: 'Chat', isChat: true },
@@ -19,6 +20,7 @@ const superAdminNav = [
 
 const adminNav = [
   { to: '/admin-dashboard',icon: Building2,       label: 'Company Admin Panel' },
+  { to: '/leaderboard',    icon: Trophy,          label: 'Eco Leaderboard' },
   { to: '/reports',        icon: BarChart3,       label: 'Fleet & Fuel Analytics' },
   { to: '/dashboard',      icon: LayoutDashboard, label: 'Commuter View' },
   { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
@@ -33,6 +35,7 @@ const adminNav = [
 
 const employeeNav = [
   { to: '/dashboard',      icon: LayoutDashboard, label: 'Commuter Dashboard' },
+  { to: '/leaderboard',    icon: Trophy,          label: 'Eco Leaderboard' },
   { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
   { to: '/rides/offer',    icon: Navigation,      label: 'Offer a Ride' },
   { to: '/trips',          icon: Calendar,        label: 'My Trips' },
@@ -43,6 +46,7 @@ const employeeNav = [
   { to: '/places',         icon: MapPin,          label: 'Saved Places' },
   { to: '/settings',       icon: Settings,        label: 'Settings' },
 ];
+
 
 export function Sidebar({ open, onClose }) {
   const { user, logout } = useAuth();
