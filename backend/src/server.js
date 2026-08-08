@@ -2,6 +2,7 @@ require("dotenv/config");
 const http = require("http");
 const { Server: SocketIOServer } = require("socket.io");
 const createApp = require("./app");
+const { setupSockets } = require("./sockets");
 
 const app = createApp();
 const server = http.createServer(app);
@@ -14,8 +15,7 @@ const io = new SocketIOServer(server, {
   },
 });
 
-// Socket setup is wired in src/sockets/index.js once that module exists.
-// For now, export the io instance so it can be configured externally.
+setupSockets(io);
 app.set("io", io);
 
 // ── Start ─────────────────────────────────────────────────────────────
