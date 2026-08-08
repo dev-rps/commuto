@@ -76,6 +76,23 @@ class RideRepository {
       },
     });
   }
+
+  async createLocation({ rideId, latitude, longitude }) {
+    return prisma.rideLocation.create({
+      data: {
+        rideId,
+        latitude,
+        longitude,
+      },
+    });
+  }
+
+  async getLocations(rideId) {
+    return prisma.rideLocation.findMany({
+      where: { rideId },
+      orderBy: { timestamp: "asc" },
+    });
+  }
 }
 
 module.exports = new RideRepository();

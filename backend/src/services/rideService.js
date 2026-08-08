@@ -161,6 +161,54 @@ class RideService {
 
     return updatedRide;
   }
+
+  async postLocation(rideId, driverId, { latitude, longitude }) {
+    const ride = await rideRepository.findById(rideId);
+    if (!ride) {
+      const error = new Error("Ride not found");
+      error.status = 404;
+      throw error;
+    }
+
+    // Row-level driver ownership check
+    if (ride.driverId !== driverId) {
+      const error = new Error("Forbidden: Only the driver of this ride can post location updates");
+      error.status = 403;
+      throw error;
+    }
+
+    // Status check
+    if (ride.status !== "IN_PROGRESS") {
+      const error = new Error("Cannot post location: Ride is not currently IN_PROGRESS");
+      error.status = 400;
+      throw error;
+    }
+
+    const locationRecord = await rideRepository.createLocation({
+      rideId,
+      latitude,
+      longitude,
+    });
+
+    // Emit live location via Socket.IO
+    try {
+      const io = getIO();
+      const eventName = SOCKET_EVENTS.rideLocation(rideId);
+      const locationPayload = {
+        rideId,
+        latitude,
+        longitude,
+        timestamp: locationRecord.timestamp,
+      };
+
+      // Broadcast to ride room
+      io.to(`ride:${rideId}`).emit(eventName, locationPayload);
+    } catch (socketErr) {
+      console.warn("Socket location broadcast warning:", socketErr.message);
+    }
+
+    return locationRecord;
+  }
 }
 
 module.exports = new RideService();

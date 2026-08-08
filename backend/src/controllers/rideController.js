@@ -31,6 +31,19 @@ class RideController {
       next(err);
     }
   }
+
+  async postLocation(req, res, next) {
+    try {
+      const location = await rideService.postLocation(
+        req.params.id,
+        req.user.id,
+        req.body
+      );
+      res.status(201).json({ location });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 module.exports = new RideController();

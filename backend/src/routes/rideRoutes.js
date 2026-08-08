@@ -6,6 +6,7 @@ const {
   createRideSchema,
   searchRideSchema,
   updateRideStatusSchema,
+  updateLocationSchema,
 } = require("../schemas");
 
 const router = express.Router();
@@ -15,5 +16,6 @@ router.use(requireAuth);
 router.post("/", validate(createRideSchema), rideController.publishRide);
 router.get("/search", validate(searchRideSchema, "query"), rideController.searchRides);
 router.patch("/:id/status", validate(updateRideStatusSchema), rideController.updateStatus);
+router.post("/:id/location", validate(updateLocationSchema), rideController.postLocation);
 
 module.exports = router;
