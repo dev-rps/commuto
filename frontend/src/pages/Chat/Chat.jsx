@@ -26,7 +26,10 @@ export default function Chat() {
   }, [rideId]);
 
   const handleIncomingMessage = useCallback((msg) => {
-    setMessages((prev) => [...prev, msg]);
+    setMessages((prev) => {
+      if (prev.some(m => m.id === msg.id)) return prev;
+      return [...prev, msg];
+    });
   }, []);
 
   useEffect(() => {
@@ -51,7 +54,10 @@ export default function Chat() {
     setSending(true);
     try {
       const msg = await sendMessage(rideId, input.trim());
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => {
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
       setInput('');
       inputRef.current?.focus();
     } catch (err) {

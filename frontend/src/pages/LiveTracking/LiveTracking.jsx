@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Navigation, Clock, MapPin, ArrowLeft, Share2 } from 'lucide-react';
+import { Navigation, Clock, MapPin, ArrowLeft, Share2, CheckCircle } from 'lucide-react';
 import { RouteMap, Spinner, StatusBadge } from '../../components';
-import { getRide, updateRideStatus, startRide } from '../../lib/api';
+import { getRide, updateRideStatus, startRide, initiatePayment } from '../../lib/api';
 import { useSocket } from '../../context/SocketContext';
 import { useAuth } from '../../context/AuthContext';
 import { haversineKm } from '../../lib/utils';
@@ -65,6 +65,12 @@ export default function LiveTracking() {
   const [eta, setEta]           = useState(null);
   const intervalRef             = useRef(null);
 
+  // Payment Modal States
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentSuccess, setPaymentSuccess]     = useState(false);
+  const [paymentMethod, setPaymentMethod]       = useState('WALLET');
+  const [paying, setPaying]                     = useState(false);
+
   const animatedPos = useSmoothPosition(currentPos);
 
   useEffect(() => {
@@ -79,7 +85,12 @@ export default function LiveTracking() {
   }, []);
 
   const handleStatusUpdate = useCallback((data) => {
-    if (data?.status && ride) setRide({ ...ride, status: data.status });
+    if (data?.status && ride) {
+      setRide(prev => ({ ...prev, status: data.status }));
+      if (data.status === 'COMPLETED') {
+        setShowPaymentModal(true);
+      }
+    }
   }, [ride]);
 
   useEffect(() => {
@@ -97,6 +108,10 @@ export default function LiveTracking() {
       }
     };
   }, [rideId, socket, events, joinRideRoom, leaveRideRoom, handleLocationUpdate, handleStatusUpdate]);
+
+  useEffect(() => {
+    if (ride?.status === 'COMPLETED') setShowPaymentModal(true);
+  }, [ride?.status]);
 
   // Mock movement simulation
   useEffect(() => {
@@ -121,9 +136,14 @@ export default function LiveTracking() {
   if (!ride) return <div className="text-center py-8 text-neutral-500">Ride not found</div>;
 
   const distanceLeft = animatedPos ? haversineKm(animatedPos.lat, animatedPos.lng, ride.destLat, ride.destLng).toFixed(1) : '—';
+  const isDriver = user?.id === ride.driverId;
+  const myBooking = ride.bookings?.find(b => b.passengerId === user?.id);
+  const amountDue = isDriver 
+    ? (ride.farePerSeat * (ride.bookings?.filter(b => b.status === 'BOOKED' || b.status === 'PAYMENT_COMPLETED').reduce((acc, curr) => acc + curr.seats, 0) || 0)) 
+    : (myBooking?.totalFare || ride.farePerSeat);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4">
+    <div className="max-w-4xl mx-auto space-y-4 relative">
       {/* Top bar */}
       <div className="flex items-center justify-between">
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors">
@@ -193,7 +213,7 @@ export default function LiveTracking() {
       </div>
 
       {/* Driver Controls */}
-      {user?.id === ride.driverId && (
+      {isDriver && (
         <div className="card p-4 mt-4 bg-neutral-50 border border-neutral-200">
           <h3 className="font-bold text-neutral-900 mb-3">Driver Controls</h3>
           
@@ -250,6 +270,7 @@ export default function LiveTracking() {
                   const updated = await updateRideStatus(ride.id, 'COMPLETED');
                   setRide({ ...ride, status: updated.status });
                   toast.success('Ride completed!');
+                  setShowPaymentModal(true);
                 } catch (e) {
                   toast.error(e.response?.data?.error || e.message || 'Failed to finish ride');
                 }
@@ -261,10 +282,141 @@ export default function LiveTracking() {
           )}
           
           {ride.status === 'COMPLETED' && (
-            <p className="text-sm text-center text-green-600 font-medium bg-green-50 p-2 rounded-lg">
-              Ride finished successfully
-            </p>
+            <div className="flex gap-3 mt-2">
+              <p className="flex-1 text-sm text-center text-green-600 font-medium bg-green-50 p-2 rounded-lg">
+                Ride finished successfully
+              </p>
+              <button onClick={() => setShowPaymentModal(true)} className="btn-secondary whitespace-nowrap">
+                View Earnings
+              </button>
+            </div>
           )}
+        </div>
+      )}
+
+      {/* Payment / Post-Ride Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl animate-fade-up">
+            {paymentSuccess ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8" />
+                </div>
+                <h2 className="text-2xl font-bold text-neutral-900 mb-2">Transaction Successful!</h2>
+                <p className="text-neutral-500 mb-6">Your ride has been fully completed.</p>
+                <button onClick={() => navigate('/trips')} className="btn-primary w-full">
+                  Back to My Trips
+                </button>
+              </div>
+            ) : (
+              <div>
+                <h2 className="text-xl font-bold text-neutral-900 mb-1">Ride Completed</h2>
+                <p className="text-sm text-neutral-500 mb-6">
+                  {isDriver ? 'Summary of your earnings' : 'Please complete your payment'}
+                </p>
+
+                <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-neutral-600">{isDriver ? 'Total Collected' : 'Fare Amount'}</span>
+                    <span className="text-2xl font-bold text-neutral-900">₹{amountDue}</span>
+                  </div>
+                  {!isDriver && myBooking && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-neutral-500">Seats Booked</span>
+                      <span className="font-medium">{myBooking.seats}</span>
+                    </div>
+                  )}
+                </div>
+
+                {!isDriver ? (
+                  <div className="space-y-3 mb-6">
+                    <label className="text-sm font-semibold text-neutral-900">Select Payment Method</label>
+                    {['WALLET', 'UPI', 'CARD'].map((method) => (
+                      <button
+                        key={method}
+                        onClick={() => setPaymentMethod(method)}
+                        className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
+                          paymentMethod === method 
+                            ? 'border-primary bg-primary-50/50 shadow-sm' 
+                            : 'border-neutral-200 hover:border-primary-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-medium text-neutral-900">{method === 'WALLET' ? 'Commuto Wallet' : method}</span>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          paymentMethod === method ? 'border-primary' : 'border-neutral-300'
+                        }`}>
+                          {paymentMethod === method && <div className="w-2 h-2 rounded-full bg-primary" />}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-3 mb-6">
+                    <label className="text-sm font-semibold text-neutral-900">Receive Earnings to</label>
+                    {['WALLET', 'BANK_ACCOUNT'].map((method) => (
+                      <button
+                        key={method}
+                        onClick={() => setPaymentMethod(method)}
+                        className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
+                          paymentMethod === method 
+                            ? 'border-primary bg-primary-50/50 shadow-sm' 
+                            : 'border-neutral-200 hover:border-primary-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="font-medium text-neutral-900">{method === 'WALLET' ? 'Commuto Wallet' : 'Linked Bank Account'}</span>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          paymentMethod === method ? 'border-primary' : 'border-neutral-300'
+                        }`}>
+                          {paymentMethod === method && <div className="w-2 h-2 rounded-full bg-primary" />}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  disabled={paying}
+                  onClick={async () => {
+                    setPaying(true);
+                    try {
+                      if (!isDriver) {
+                        if (!myBooking?.id) throw new Error("Booking not found");
+                        await initiatePayment(myBooking.id, paymentMethod);
+                      } else {
+                        // Mock receiving for driver
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                      }
+                      setPaymentSuccess(true);
+                    } catch (err) {
+                      toast.error(err.response?.data?.error || err.message || 'Payment failed');
+                    } finally {
+                      setPaying(false);
+                    }
+                  }}
+                  className="btn-primary w-full py-3.5 text-base"
+                >
+                  {paying ? (
+                    <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  ) : isDriver ? (
+                    `Confirm & Receive ₹${amountDue}`
+                  ) : (
+                    `Pay ₹${amountDue} Now`
+                  )}
+                </button>
+                <button 
+                  onClick={() => setShowPaymentModal(false)}
+                  className="btn-ghost w-full mt-3 text-neutral-500"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

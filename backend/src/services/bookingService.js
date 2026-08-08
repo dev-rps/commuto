@@ -124,6 +124,15 @@ class BookingService {
         throw error;
       }
 
+      // Cannot cancel if the ride has already started or completed
+      if (booking.ride.status !== "PUBLISHED") {
+        const error = new Error(
+          `Cannot cancel booking because the ride is already ${booking.ride.status}.`
+        );
+        error.status = 400;
+        throw error;
+      }
+
       // Restore seats on the ride
       await tx.ride.update({
         where: { id: booking.rideId },

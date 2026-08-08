@@ -62,7 +62,7 @@ export default function AvailableRides() {
       setSelectedRide(null);
       setTimeout(() => navigate('/trips'), 1000);
     } catch (err) {
-      toast.error(err.message || 'Failed to book ride');
+      toast.error(err.response?.data?.error || err.message || 'Failed to book ride');
     } finally { setBooking(false); }
   };
 

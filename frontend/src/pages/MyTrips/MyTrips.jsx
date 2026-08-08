@@ -170,12 +170,12 @@ export default function MyTrips() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    {rideStatus === 'IN_PROGRESS' && (
+                    {(rideStatus === 'IN_PROGRESS' || (!isTrip && (rideStatus === 'PUBLISHED' || rideStatus === 'AT_PICKUP'))) && (
                       <button onClick={() => navigate(`/tracking/${isTrip ? item.rideId : item.id}`)} className="btn-accent">
-                        <Navigation className="w-4 h-4" /> Track
+                        <Navigation className="w-4 h-4" /> {!isTrip && rideStatus !== 'IN_PROGRESS' ? 'Start Ride' : 'Track'}
                       </button>
                     )}
-                    {isTrip && status === 'BOOKED' && (
+                    {isTrip && status === 'BOOKED' && rideStatus === 'PUBLISHED' && (
                       <button onClick={() => handleCancel(item.id)} disabled={cancelling === item.id}
                         className="btn-secondary text-error border-error/30 hover:bg-error/5">
                         <X className="w-4 h-4" />
