@@ -1,9 +1,51 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Navigation, Mail, Lock, User, Building2 } from 'lucide-react';
+import { Mail, Lock, User, Building2, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
 import { login as apiLogin, signup as apiSignup, getOrganizations } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { FieldError } from '../../components';
+
+const STATS = [
+  { value: '30%', label: 'Avg. cost savings' },
+  { value: '12k+', label: 'Trips shared' },
+  { value: '4.8★', label: 'User rating' },
+];
+
+const FEATURES = [
+  'Real-time ride matching with colleagues',
+  'Live GPS tracking & ETA',
+  'Secure in-app payments & wallet',
+  'Detailed fleet analytics for admins',
+];
+
+function PasswordStrength({ password }) {
+  const checks = [
+    password.length >= 8,
+    /\d/.test(password),
+    /[^a-zA-Z0-9]/.test(password),
+    /[A-Z]/.test(password),
+  ];
+  const score = checks.filter(Boolean).length;
+  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+  const colors = ['', 'bg-error', 'bg-warning', 'bg-yellow-400', 'bg-accent'];
+
+  if (!password) return null;
+  return (
+    <div className="mt-2 space-y-1.5">
+      <div className="flex gap-1">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= score ? colors[score] : 'bg-neutral-200'}`}
+          />
+        ))}
+      </div>
+      <p className={`text-xs font-medium ${score >= 3 ? 'text-accent-600' : score >= 2 ? 'text-warning' : 'text-error'}`}>
+        {labels[score]}
+      </p>
+    </div>
+  );
+}
 
 export default function Login() {
   const [mode, setMode] = useState('login');
@@ -11,6 +53,7 @@ export default function Login() {
   const [formError, setFormError] = useState('');
   const [errors, setErrors] = useState({});
   const [orgs, setOrgs] = useState([]);
+  const [showPass, setShowPass] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -25,11 +68,11 @@ export default function Login() {
     const e = {};
     if (mode === 'signup' && !form.name.trim()) e.name = 'Name is required';
     if (!form.email.trim()) e.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Enter a valid email address';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Enter a valid email';
     if (!form.password) e.password = 'Password is required';
-    else if (mode === 'signup' && form.password.length < 8) e.password = 'Password must be at least 8 characters';
-    else if (mode === 'signup' && !/\d/.test(form.password)) e.password = 'Password must contain at least 1 digit';
-    else if (mode === 'signup' && !/[^a-zA-Z0-9]/.test(form.password)) e.password = 'Password must contain at least 1 special character';
+    else if (mode === 'signup' && form.password.length < 8) e.password = 'At least 8 characters';
+    else if (mode === 'signup' && !/\d/.test(form.password)) e.password = 'Include at least 1 digit';
+    else if (mode === 'signup' && !/[^a-zA-Z0-9]/.test(form.password)) e.password = 'Include 1 special character';
     if (mode === 'signup' && !form.organizationId) e.organizationId = 'Please select your organization';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -58,36 +101,106 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex">
-      <div className="hidden lg:flex w-1/2 bg-primary flex-col justify-between p-12 relative overflow-hidden">
+      {/* ── Left hero panel ─────────────────────────────────── */}
+      <div
+        className="hidden lg:flex w-1/2 flex-col justify-between p-12 relative overflow-hidden"
+        style={{ background: 'var(--gradient-hero)' }}
+      >
+        {/* Decorative orbs */}
+        <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-white/3 blur-3xl" />
+
+        {/* Brand */}
         <div className="relative z-10 flex items-center gap-3 text-white">
-          <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center">
-            <Navigation className="w-6 h-6" strokeWidth={2.5} />
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)' }}
+          >
+            <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
+              <path d="M8 24 C8 20 12 16 20 16 C28 16 32 20 32 24" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+              <rect x="6" y="24" width="28" height="10" rx="4" fill="white" fillOpacity="0.9"/>
+              <circle cx="12" cy="34" r="3" fill="white"/>
+              <circle cx="28" cy="34" r="3" fill="white"/>
+              <path d="M20 8 L23 13 L17 13 Z" fill="white" fillOpacity="0.7"/>
+            </svg>
           </div>
-          <span className="text-xl font-bold">RideSync</span>
+          <span className="text-xl font-bold tracking-tight">Commuto</span>
         </div>
-        <div className="relative z-10 text-white max-w-md">
-          <h2 className="text-3xl font-bold leading-tight mb-4">Carpool smarter across your enterprise</h2>
-          <p className="text-primary-100 text-base leading-relaxed">Share rides with colleagues, track trips in real time, and reduce commuting costs with powerful analytics for your organization.</p>
+
+        {/* Headline */}
+        <div className="relative z-10 text-white space-y-6">
+          <h2 className="text-4xl font-bold leading-tight">
+            Carpool smarter<br />across your enterprise
+          </h2>
+          <p className="text-blue-200 text-base leading-relaxed max-w-sm">
+            Share rides with colleagues, track trips in real time, and cut commuting costs with powerful fleet analytics.
+          </p>
+
+          {/* Feature checklist */}
+          <ul className="space-y-2.5 mt-4">
+            {FEATURES.map((f) => (
+              <li key={f} className="flex items-center gap-2.5 text-sm text-blue-100">
+                <CheckCircle className="w-4 h-4 text-accent-300 shrink-0" />
+                {f}
+              </li>
+            ))}
+          </ul>
         </div>
-        <div className="relative z-10 flex gap-8 text-white">
-          <div><p className="text-3xl font-bold">30%</p><p className="text-sm text-primary-100">Avg cost savings</p></div>
-          <div><p className="text-3xl font-bold">12k+</p><p className="text-sm text-primary-100">Trips shared</p></div>
-          <div><p className="text-3xl font-bold">4.8</p><p className="text-sm text-primary-100">User rating</p></div>
+
+        {/* Stats row */}
+        <div className="relative z-10 flex gap-8">
+          {STATS.map((s) => (
+            <div key={s.value}>
+              <p className="text-3xl font-bold text-white">{s.value}</p>
+              <p className="text-sm text-blue-200 mt-0.5">{s.label}</p>
+            </div>
+          ))}
         </div>
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-white/5" />
-        <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-white/5" />
       </div>
 
+      {/* ── Right form panel ────────────────────────────────── */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-neutral-50">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md animate-fade-up">
+          {/* Mobile brand */}
           <div className="lg:hidden flex items-center gap-2.5 mb-8">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <Navigation className="w-6 h-6 text-white" strokeWidth={2.5} />
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: 'var(--gradient-primary)' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 40 40" fill="none">
+                <path d="M8 24 C8 20 12 16 20 16 C28 16 32 20 32 24" stroke="white" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+                <rect x="6" y="24" width="28" height="10" rx="4" fill="white" fillOpacity="0.9"/>
+                <circle cx="12" cy="34" r="3" fill="white"/>
+                <circle cx="28" cy="34" r="3" fill="white"/>
+              </svg>
             </div>
-            <span className="text-xl font-bold text-neutral-900">RideSync</span>
+            <span className="text-xl font-bold text-neutral-900">Commuto</span>
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900 mb-1">{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1>
-          <p className="text-sm text-neutral-500 mb-8">{mode === 'login' ? 'Sign in to your RideSync account' : "Join your organization's carpool network"}</p>
+
+          {/* Mode toggle pills */}
+          <div className="flex bg-neutral-100 rounded-xl p-1 mb-7">
+            {['login', 'signup'].map((m) => (
+              <button
+                key={m}
+                onClick={() => switchMode(m)}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                  mode === m
+                    ? 'bg-white text-neutral-900 shadow-sm'
+                    : 'text-neutral-500 hover:text-neutral-700'
+                }`}
+              >
+                {m === 'login' ? 'Sign In' : 'Create Account'}
+              </button>
+            ))}
+          </div>
+
+          <h1 className="text-2xl font-bold text-neutral-900 mb-1">
+            {mode === 'login' ? 'Welcome back 👋' : 'Get started free'}
+          </h1>
+          <p className="text-sm text-neutral-500 mb-6">
+            {mode === 'login' ? 'Sign in to your Commuto account' : "Join your organization's carpool network"}
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
@@ -95,36 +208,51 @@ export default function Login() {
                 <label className="label">Full Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                  <input name="name" type="text" value={form.name} onChange={handleChange} placeholder="John Doe" className={`input pl-10 ${errors.name ? 'input-error' : ''}`} />
+                  <input name="name" type="text" value={form.name} onChange={handleChange}
+                    placeholder="John Doe" className={`input pl-10 ${errors.name ? 'input-error' : ''}`} />
                 </div>
                 <FieldError error={errors.name} />
               </div>
             )}
+
             <div>
               <label className="label">Email Address</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="you@company.com" className={`input pl-10 ${errors.email ? 'input-error' : ''}`} />
+                <input name="email" type="email" value={form.email} onChange={handleChange}
+                  placeholder="you@company.com" className={`input pl-10 ${errors.email ? 'input-error' : ''}`} />
               </div>
               <FieldError error={errors.email} />
             </div>
+
             <div>
               <label className="label">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="••••••••" className={`input pl-10 ${errors.password ? 'input-error' : ''}`} />
+                <input name="password" type={showPass ? 'text' : 'password'} value={form.password} onChange={handleChange}
+                  placeholder="••••••••" className={`input pl-10 pr-10 ${errors.password ? 'input-error' : ''}`} />
+                <button type="button" onClick={() => setShowPass((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600">
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
               <FieldError error={errors.password} />
+              {mode === 'signup' && <PasswordStrength password={form.password} />}
             </div>
+
             {mode === 'signup' && (
               <>
                 <div>
                   <label className="label">Role</label>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     {['EMPLOYEE', 'COMPANY_ADMIN'].map((r) => (
                       <button key={r} type="button" onClick={() => setForm({ ...form, role: r })}
-                        className={`flex-1 px-4 py-2.5 rounded-md border text-sm font-medium transition-colors ${form.role === r ? 'border-primary bg-primary-50 text-primary-700' : 'border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50'}`}>
-                        {r === 'EMPLOYEE' ? 'Employee' : 'Company Admin'}
+                        className={`flex-1 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
+                          form.role === r
+                            ? 'border-primary bg-primary-50 text-primary'
+                            : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300'
+                        }`}>
+                        {r === 'EMPLOYEE' ? '👤 Employee' : '🏢 Admin'}
                       </button>
                     ))}
                   </div>
@@ -133,7 +261,8 @@ export default function Login() {
                   <label className="label">Organization</label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                    <select name="organizationId" value={form.organizationId} onChange={handleChange} className={`input pl-10 ${errors.organizationId ? 'input-error' : ''}`}>
+                    <select name="organizationId" value={form.organizationId} onChange={handleChange}
+                      className={`input pl-10 ${errors.organizationId ? 'input-error' : ''}`}>
                       <option value="">Select your organization</option>
                       {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                     </select>
@@ -142,19 +271,35 @@ export default function Login() {
                 </div>
               </>
             )}
-            {formError && <div className="rounded-md bg-error/10 px-4 py-3 text-sm text-error font-medium">{formError}</div>}
-            <button type="submit" disabled={loading} className="btn-primary w-full">{loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}</button>
+
+            {formError && (
+              <div className="rounded-xl bg-error/8 border border-error/20 px-4 py-3 text-sm text-error font-medium">
+                {formError}
+              </div>
+            )}
+
+            <button type="submit" disabled={loading}
+              className="btn-primary w-full h-11 text-base mt-2">
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  Please wait...
+                </span>
+              ) : (
+                <>
+                  {mode === 'login' ? 'Sign In' : 'Create Account'}
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
           </form>
 
-          <p className="text-center text-sm text-neutral-500 mt-6">
-            {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-            <button onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')} className="text-primary font-semibold hover:underline">{mode === 'login' ? 'Sign up' : 'Sign in'}</button>
-          </p>
+          {/* Demo hint */}
           {mode === 'login' && (
-            <div className="mt-6 rounded-md bg-neutral-100 px-4 py-3 text-xs text-neutral-500">
-              <p className="font-medium text-neutral-600 mb-1">Demo accounts (mock mode):</p>
-              <p>Employee: any email with password</p>
-              <p>Admin: use an email containing "admin"</p>
+            <div className="mt-5 rounded-xl bg-primary-50 border border-primary-100 px-4 py-3 text-xs text-primary-700">
+              <p className="font-semibold mb-0.5">Demo (mock mode):</p>
+              <p>Employee — any email + any password</p>
+              <p>Admin — email containing "admin"</p>
             </div>
           )}
         </div>
