@@ -53,7 +53,7 @@ async function main() {
   console.log("✅ 3 Organizations created (Infosys, Wipro, TCS)");
 
   // ─── Users ───────────────────────────────────────────────────────
-  // 1. Super Admin
+  // 1. Super Admin (Developer)
   const superAdmin = await prisma.user.create({
     data: {
       organizationId: null,
