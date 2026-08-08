@@ -7,6 +7,7 @@ const SOCKET_EVENTS = {
   rideStatus: (rideId) => `ride:status:${rideId}`,
   chatMessage: (rideId) => `chat:message:${rideId}`,
   notificationNew: (userId) => `notification:new:${userId}`,
+  ridePublished: (orgId) => `ride:published:${orgId}`,
 };
 
 /** @type {import("socket.io").Server | null} */
@@ -29,8 +30,8 @@ function getIO() {
  *
  * Room-join pattern on connect:
  *   - Every socket joins `user:{userId}`
+ *   - Every socket joins `org:{organizationId}` for company-scoped ride announcements
  *   - COMPANY_ADMIN additionally joins `admin:{organizationId}`
- *     (org-scoped, not global — don't leak ride data across organizations)
  *
  * @param {import("socket.io").Server} io
  */
@@ -67,6 +68,11 @@ function setupSockets(io) {
 
     // Every authenticated user joins their personal room
     socket.join(`user:${userId}`);
+
+    // Every user joins their company org room for announcements
+    if (organizationId) {
+      socket.join(`org:${organizationId}`);
+    }
 
     // COMPANY_ADMIN joins org-scoped admin room
     if (role === "COMPANY_ADMIN" && organizationId) {

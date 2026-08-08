@@ -36,7 +36,7 @@ class RideService {
       throw error;
     }
 
-    return rideRepository.createRide({
+    const newRide = await rideRepository.createRide({
       driverId,
       vehicleId: rideData.vehicleId,
       pickupLoc: rideData.pickupLoc,
@@ -50,6 +50,28 @@ class RideService {
       farePerSeat: rideData.farePerSeat,
       distanceKm: rideData.distanceKm ?? null,
     });
+
+    // Socket real-time notification for newly published ride scoped to company org
+    try {
+      const io = getIO();
+      const driverOrgId = targetVehicle?.driver?.organizationId;
+      if (driverOrgId) {
+        const eventName = SOCKET_EVENTS.ridePublished(driverOrgId);
+        io.to(`org:${driverOrgId}`).emit(eventName, {
+          rideId: newRide.id,
+          pickupLoc: newRide.pickupLoc,
+          destination: newRide.destination,
+          departureTime: newRide.departureTime,
+          availableSeats: newRide.availableSeats,
+          farePerSeat: newRide.farePerSeat,
+          organizationId: driverOrgId,
+        });
+      }
+    } catch (socketErr) {
+      console.warn("Socket ridePublished emit warning:", socketErr.message);
+    }
+
+    return newRide;
   }
 
   async getRide(rideId) {

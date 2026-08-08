@@ -8,6 +8,7 @@ export const SOCKET_EVENTS = {
   rideStatus: (rideId) => `ride:status:${rideId}`,
   chatMessage: (rideId) => `chat:message:${rideId}`,
   notificationNew: (userId) => `notification:new:${userId}`,
+  ridePublished: (orgId) => `ride:published:${orgId}`,
 };
 
 const SocketContext = createContext(null);

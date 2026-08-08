@@ -83,6 +83,7 @@
 | `ride:status:{rideId}` | Server → Client | `{ status }` | Ride status change notification |
 | `chat:message:{rideId}` | Bidirectional | `{ senderId, message, sentAt }` | In-ride chat |
 | `notification:new:{userId}` | Server → Client | `{ type, title, body }` | User notification |
+| `ride:published:{orgId}` | Server → Client | `{ rideId, pickupLoc, destination, departureTime }` | Organization real-time ride announcement |
 
 ### Connection
 

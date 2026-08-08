@@ -6,6 +6,7 @@ import { formatDateTime, formatINR, timeUntil } from '../../lib/utils';
 import { StatusBadge, RouteMap, EmptyState } from '../../components';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useSocket } from '../../context/SocketContext';
 import { SkeletonCard } from '../../components/Skeleton';
 import { users as mockUsers, bookings as mockBookings } from '../../mocks/mockData';
 
@@ -14,20 +15,44 @@ export default function AvailableRides() {
   const navigate   = useNavigate();
   const { user }   = useAuth();
   const toast      = useToast();
+  const { socket, events } = useSocket();
   const [rides, setRides]           = useState([]);
   const [loading, setLoading]       = useState(true);
   const [booking, setBooking]       = useState(false);
   const [selectedRide, setSelectedRide] = useState(null);
   const [sortBy, setSortBy]         = useState('time'); // 'time' | 'price' | 'seats'
+  const [newRidesCount, setNewRidesCount] = useState(0);
   const params = location.state || {};
 
-  useEffect(() => {
+  const fetchRides = () => {
+    setLoading(true);
     searchRides(params)
       .then(setRides)
       .catch(() => toast.error('Failed to load rides'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setNewRidesCount(0);
+      });
+  };
+
+  useEffect(() => {
+    fetchRides();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const myOrgId = user?.organizationId || user?.organization?.id || 'org-1';
+
+  useEffect(() => {
+    if (!socket || !myOrgId) return;
+    const eventName = events.ridePublished(myOrgId);
+    const handleNewRide = () => {
+      setNewRidesCount((c) => c + 1);
+    };
+    socket.on(eventName, handleNewRide);
+    return () => {
+      socket.off(eventName, handleNewRide);
+    };
+  }, [socket, events, myOrgId]);
 
   const handleBook = async (ride) => {
     setBooking(true);
@@ -85,6 +110,24 @@ export default function AvailableRides() {
           <SearchIcon className="w-4 h-4" /> Refine
         </button>
       </div>
+
+      {/* Real-time new ride notification pill */}
+      {newRidesCount > 0 && (
+        <div className="mb-4 flex items-center justify-between p-3 rounded-xl bg-primary-50 border border-primary-200 text-primary text-xs font-semibold shadow-xs animate-fade-in">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
+            <span>{newRidesCount} new ride{newRidesCount > 1 ? 's' : ''} match your route — tap to refresh</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={fetchRides} className="btn-primary text-xs py-1 px-3">
+              Refresh
+            </button>
+            <button onClick={() => setNewRidesCount(0)} className="text-neutral-400 hover:text-neutral-600 p-1">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Sort chips */}
       {rides.length > 0 && (
