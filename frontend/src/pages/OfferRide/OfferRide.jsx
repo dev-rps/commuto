@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, Clock, Users, Wallet, Car, Navigation, ChevronRight, MapPin, ArrowRight, Sparkles } from 'lucide-react';
 import { getMyVehicles, publishRide } from '../../lib/api';
-import { FieldError } from '../../components';
+import { FieldError, LocationAutocomplete } from '../../components';
 import { SkeletonCard } from '../../components/Skeleton';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
@@ -25,7 +25,11 @@ export default function OfferRide() {
   const [form, setForm] = useState({
     vehicleId: routeState.vehicleId || '',
     pickupLoc: routeState.pickupLoc || '',
+    pickupLat: routeState.pickupLat || 12.9352,
+    pickupLng: routeState.pickupLng || 77.6245,
     destination: routeState.destination || '',
+    destLat: routeState.destLat || 12.8399,
+    destLng: routeState.destLng || 77.677,
     date: routeState.date || '',
     time: routeState.time || '',
     availableSeats: routeState.availableSeats || '',
@@ -40,6 +44,26 @@ export default function OfferRide() {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setErrors({ ...errors, [e.target.name]: undefined });
+  };
+
+  const handleSelectLocation = ({ name, address, lat, lng }) => {
+    if (name === 'pickupLoc') {
+      setForm((prev) => ({
+        ...prev,
+        pickupLoc: address,
+        pickupLat: lat || prev.pickupLat,
+        pickupLng: lng || prev.pickupLng,
+      }));
+      setErrors((prev) => ({ ...prev, pickupLoc: undefined }));
+    } else if (name === 'destination') {
+      setForm((prev) => ({
+        ...prev,
+        destination: address,
+        destLat: lat || prev.destLat,
+        destLng: lng || prev.destLng,
+      }));
+      setErrors((prev) => ({ ...prev, destination: undefined }));
+    }
   };
 
   const validateStep = (s) => {
@@ -190,14 +214,26 @@ export default function OfferRide() {
                   <div className="flex-1 space-y-3">
                     <div>
                       <label className="label">Pickup Location</label>
-                      <input name="pickupLoc" value={form.pickupLoc} onChange={handleChange}
-                        placeholder="e.g. Koramangala" className={`input ${errors.pickupLoc ? 'input-error' : ''}`} />
+                      <LocationAutocomplete
+                        name="pickupLoc"
+                        value={form.pickupLoc}
+                        onChange={handleChange}
+                        onSelectLocation={handleSelectLocation}
+                        placeholder="e.g. Koramangala, Bangalore"
+                        error={errors.pickupLoc}
+                      />
                       <FieldError error={errors.pickupLoc} />
                     </div>
                     <div>
                       <label className="label">Destination</label>
-                      <input name="destination" value={form.destination} onChange={handleChange}
-                        placeholder="e.g. Electronic City" className={`input ${errors.destination ? 'input-error' : ''}`} />
+                      <LocationAutocomplete
+                        name="destination"
+                        value={form.destination}
+                        onChange={handleChange}
+                        onSelectLocation={handleSelectLocation}
+                        placeholder="e.g. Electronic City, Bangalore"
+                        error={errors.destination}
+                      />
                       <FieldError error={errors.destination} />
                     </div>
                   </div>

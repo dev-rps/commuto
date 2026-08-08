@@ -1,19 +1,48 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Clock, Users, Repeat, ArrowRight, Search } from 'lucide-react';
-import { FieldError } from '../../components';
+import { Calendar, Clock, Users, Repeat, ArrowRight, Search } from 'lucide-react';
+import { FieldError, LocationAutocomplete } from '../../components';
 
 export default function FindRide() {
   const navigate = useNavigate();
   const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
-    pickupLoc: '', destination: '', date: '', time: '', seats: 1, recurring: false,
+    pickupLoc: '',
+    pickupLat: 12.9352,
+    pickupLng: 77.6245,
+    destination: '',
+    destLat: 12.8399,
+    destLng: 77.677,
+    date: '',
+    time: '',
+    seats: 1,
+    recurring: false,
   });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
-    setErrors({ ...errors, [name]: undefined });
+    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  const handleSelectLocation = ({ name, address, lat, lng }) => {
+    if (name === 'pickupLoc') {
+      setForm((prev) => ({
+        ...prev,
+        pickupLoc: address,
+        pickupLat: lat || prev.pickupLat,
+        pickupLng: lng || prev.pickupLng,
+      }));
+      setErrors((prev) => ({ ...prev, pickupLoc: undefined }));
+    } else if (name === 'destination') {
+      setForm((prev) => ({
+        ...prev,
+        destination: address,
+        destLat: lat || prev.destLat,
+        destLng: lng || prev.destLng,
+      }));
+      setErrors((prev) => ({ ...prev, destination: undefined }));
+    }
   };
 
   const validate = () => {
@@ -30,7 +59,7 @@ export default function FindRide() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
-    navigate('/rides/available', {
+    navigate('/rides/confirm', {
       state: { ...form, mode: 'search' },
     });
   };
@@ -61,25 +90,25 @@ export default function FindRide() {
           <div className="flex-1 space-y-3">
             <div>
               <label className="label">Pickup Location</label>
-              <input
+              <LocationAutocomplete
                 name="pickupLoc"
-                type="text"
                 value={form.pickupLoc}
                 onChange={handleChange}
+                onSelectLocation={handleSelectLocation}
                 placeholder="e.g. Koramangala, Bangalore"
-                className={`input ${errors.pickupLoc ? 'input-error' : ''}`}
+                error={errors.pickupLoc}
               />
               <FieldError error={errors.pickupLoc} />
             </div>
             <div>
               <label className="label">Destination</label>
-              <input
+              <LocationAutocomplete
                 name="destination"
-                type="text"
                 value={form.destination}
                 onChange={handleChange}
+                onSelectLocation={handleSelectLocation}
                 placeholder="e.g. Electronic City, Bangalore"
-                className={`input ${errors.destination ? 'input-error' : ''}`}
+                error={errors.destination}
               />
               <FieldError error={errors.destination} />
             </div>
