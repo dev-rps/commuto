@@ -66,17 +66,32 @@ class RideService {
     return rideRepository.findByDriverId(driverId);
   }
 
-  async searchRides({ pickupLat, pickupLng, destLat, destLng, date, seats = 1, radiusKm = 3 }) {
+  async searchRides({ pickupLat, pickupLng, destLat, destLng, pickupLoc, destination, date, time, seats = 1, radiusKm = 15 }) {
     let minTime = undefined;
     let maxTime = undefined;
 
     if (date) {
-      const targetTime = new Date(date);
-      if (!isNaN(targetTime.getTime())) {
-        const windowMs = 30 * 60 * 1000; // ±30 minutes
-        minTime = new Date(targetTime.getTime() - windowMs);
-        maxTime = new Date(targetTime.getTime() + windowMs);
+      const dateStr = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
+
+      if (time && typeof time === 'string') {
+        const targetTime = new Date(`${dateStr}T${time}`);
+        if (!isNaN(targetTime.getTime())) {
+          const windowMs = 3 * 60 * 60 * 1000; // ±3 hours around target time
+          minTime = new Date(targetTime.getTime() - windowMs);
+          maxTime = new Date(targetTime.getTime() + windowMs);
+        }
       }
+
+      if (!minTime) {
+        const startOfDay = new Date(`${dateStr}T00:00:00.000Z`);
+        const endOfDay = new Date(`${dateStr}T23:59:59.999Z`);
+        if (!isNaN(startOfDay.getTime()) && !isNaN(endOfDay.getTime())) {
+          minTime = startOfDay;
+          maxTime = endOfDay;
+        }
+      }
+    } else {
+      minTime = new Date();
     }
 
     const candidateRides = await rideRepository.findActiveRidesForSearch({
@@ -87,20 +102,39 @@ class RideService {
 
     const matchedRides = candidateRides
       .map((ride) => {
-        const pickupDist = haversineDistanceKm(
-          pickupLat,
-          pickupLng,
-          ride.pickupLat,
-          ride.pickupLng
-        );
-        const destDist = haversineDistanceKm(
-          destLat,
-          destLng,
-          ride.destLat,
-          ride.destLng
-        );
+        let pickupDist = 0;
+        let destDist = 0;
+        let isGeoMatch = true;
 
-        const isMatch = pickupDist <= radiusKm && destDist <= radiusKm;
+        const hasGeoSearch = pickupLat != null && pickupLng != null && destLat != null && destLng != null;
+
+        if (pickupLat != null && pickupLng != null && ride.pickupLat != null && ride.pickupLng != null) {
+          pickupDist = haversineDistanceKm(pickupLat, pickupLng, ride.pickupLat, ride.pickupLng);
+          if (pickupDist > radiusKm) isGeoMatch = false;
+        }
+
+        if (destLat != null && destLng != null && ride.destLat != null && ride.destLng != null) {
+          destDist = haversineDistanceKm(destLat, destLng, ride.destLat, ride.destLng);
+          if (destDist > radiusKm) isGeoMatch = false;
+        }
+
+        let isTextMatch = true;
+        if (pickupLoc && pickupLoc.trim()) {
+          const pLocNorm = pickupLoc.trim().toLowerCase();
+          const rPickupNorm = (ride.pickupLoc || "").toLowerCase();
+          if (!rPickupNorm.includes(pLocNorm) && !pLocNorm.includes(rPickupNorm)) {
+            isTextMatch = false;
+          }
+        }
+        if (destination && destination.trim()) {
+          const dLocNorm = destination.trim().toLowerCase();
+          const rDestNorm = (ride.destination || "").toLowerCase();
+          if (!rDestNorm.includes(dLocNorm) && !dLocNorm.includes(rDestNorm)) {
+            isTextMatch = false;
+          }
+        }
+
+        const isMatch = hasGeoSearch ? isGeoMatch : isTextMatch;
         const totalProximity = pickupDist + destDist;
 
         return {

@@ -72,25 +72,80 @@ export async function updateOrganizationPolicy(payload) {
   const { data } = await api.patch('/organizations/my/policy', payload); return data;
 }
 
+const MOCK_RIDES_KEY = 'commuto_mock_rides';
+
+function getStoredMockRides() {
+  try {
+    const stored = localStorage.getItem(MOCK_RIDES_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch (e) {
+    console.error('Error reading mock rides from localStorage', e);
+  }
+  return mock.rides;
+}
+
+function saveStoredMockRides(rides) {
+  try {
+    localStorage.setItem(MOCK_RIDES_KEY, JSON.stringify(rides));
+  } catch (e) {
+    console.error('Error saving mock rides to localStorage', e);
+  }
+}
+
 // ── Rides ─────────────────────────────────────────────────────────
 export async function searchRides(params) {
-  if (USE_MOCKS) { await delay(); return mock.rides.filter((r) => r.status === 'PUBLISHED' && r.availableSeats >= (params?.seats || 1)); }
+  if (USE_MOCKS) {
+    await delay();
+    const rides = getStoredMockRides();
+    return rides.filter((r) => r.status === 'PUBLISHED' && (r.availableSeats || 1) >= (params?.seats || 1));
+  }
   const { data } = await api.get('/rides/search', { params }); return data.rides;
 }
 export async function getRide(id) {
-  if (USE_MOCKS) { await delay(100); const ride = mock.rides.find((r) => r.id === id); if (!ride) throw new Error('Ride not found'); return ride; }
+  if (USE_MOCKS) {
+    await delay(100);
+    const rides = getStoredMockRides();
+    const ride = rides.find((r) => r.id === id);
+    if (!ride) throw new Error('Ride not found');
+    return ride;
+  }
   const { data } = await api.get(`/rides/${id}`); return data.ride;
 }
 export async function getMyRides() {
-  if (USE_MOCKS) { await delay(); return mock.rides.filter((r) => r.driverId === mock.currentUser.id); }
+  if (USE_MOCKS) {
+    await delay();
+    const rides = getStoredMockRides();
+    return rides.filter((r) => r.driverId === activeMockUser.id);
+  }
   const { data } = await api.get('/rides/my'); return data.rides;
 }
 export async function publishRide(payload) {
-  if (USE_MOCKS) { await delay(); return { ...payload, id: `ride-${Date.now()}`, driverId: mock.currentUser.id, status: 'PUBLISHED' }; }
+  if (USE_MOCKS) {
+    await delay();
+    const newRide = {
+      ...payload,
+      id: `ride-${Date.now()}`,
+      driverId: activeMockUser.id,
+      driver: { id: activeMockUser.id, name: activeMockUser.name, email: activeMockUser.email },
+      vehicle: { id: payload.vehicleId, model: 'Sedan', registrationNo: 'KA-01-AB-1234' },
+      status: 'PUBLISHED',
+      createdAt: new Date().toISOString(),
+    };
+    const rides = getStoredMockRides();
+    rides.unshift(newRide);
+    saveStoredMockRides(rides);
+    return newRide;
+  }
   const { data } = await api.post('/rides', payload); return data.ride;
 }
 export async function updateRideStatus(rideId, status) {
-  if (USE_MOCKS) { await delay(100); return { id: rideId, status }; }
+  if (USE_MOCKS) {
+    await delay(100);
+    const rides = getStoredMockRides();
+    const updated = rides.map((r) => (r.id === rideId ? { ...r, status } : r));
+    saveStoredMockRides(updated);
+    return { id: rideId, status };
+  }
   const { data } = await api.patch(`/rides/${rideId}/status`, { status }); return data.ride;
 }
 

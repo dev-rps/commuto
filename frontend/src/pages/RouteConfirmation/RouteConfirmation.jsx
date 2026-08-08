@@ -14,7 +14,7 @@ export default function RouteConfirmation() {
   const distance = haversineKm(pickupLat, pickupLng, destLat, destLng);
 
   const handleConfirm = () => {
-    if (mode === 'search') navigate('/rides/available', { state: { pickupLat, pickupLng, destLat, destLng, date, seats } });
+    if (mode === 'search') navigate('/rides/available', { state: { pickupLoc, destination, pickupLat, pickupLng, destLat, destLng, date, time, seats } });
     else navigate('/rides/offer', { state: { ...data, confirmedDistance: distance } });
   };
 

@@ -21,7 +21,7 @@ export function SocketProvider({ children }) {
     if (!token) return;
     // In mock mode we don't actually connect — wiring the real backend
     // is just removing this guard.
-    if (import.meta.env.VITE_USE_MOCKS !== 'false') return;
+    if (import.meta.env.VITE_USE_MOCKS === 'true') return;
 
     const socket = io(SOCKET_URL, { auth: { token }, transports: ['websocket'] });
     socketRef.current = socket;

@@ -66,13 +66,16 @@ const createRideSchema = z.object({
 });
 
 const searchRideSchema = z.object({
-  pickupLat: z.coerce.number().min(-90).max(90),
-  pickupLng: z.coerce.number().min(-180).max(180),
-  destLat: z.coerce.number().min(-90).max(90),
-  destLng: z.coerce.number().min(-180).max(180),
+  pickupLat: z.coerce.number().min(-90).max(90).optional(),
+  pickupLng: z.coerce.number().min(-180).max(180).optional(),
+  destLat: z.coerce.number().min(-90).max(90).optional(),
+  destLng: z.coerce.number().min(-180).max(180).optional(),
+  pickupLoc: z.string().optional(),
+  destination: z.string().optional(),
   date: z.string().optional(),
+  time: z.string().optional(),
   seats: z.coerce.number().int().positive().optional().default(1),
-  radiusKm: z.coerce.number().positive().optional().default(3),
+  radiusKm: z.coerce.number().positive().optional().default(15),
 });
 
 const updateRideStatusSchema = z.object({
