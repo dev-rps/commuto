@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const recurringController = require("../controllers/recurringController");
-const authMiddleware = require("../middleware/authMiddleware");
+const requireAuth = require("../middleware/requireAuth");
 
-router.use(authMiddleware.authenticate);
+router.use(requireAuth);
+
 
 router.post("/", recurringController.create);
 router.get("/my", recurringController.getMySchedules);

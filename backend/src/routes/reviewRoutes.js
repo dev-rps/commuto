@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const reviewController = require("../controllers/reviewController");
-const authMiddleware = require("../middleware/authMiddleware");
+const requireAuth = require("../middleware/requireAuth");
 
-router.use(authMiddleware.authenticate);
+router.use(requireAuth);
+
 
 router.post("/", reviewController.createReview);
 router.get("/user/:userId?", reviewController.getUserReviews);
