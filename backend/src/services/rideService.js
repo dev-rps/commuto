@@ -89,6 +89,8 @@ class RideService {
   }
 
   async searchRides({ pickupLat, pickupLng, destLat, destLng, pickupLoc, destination, date, time, seats = 1, radiusKm = 15 }) {
+    // seats comes as a string from query params — coerce to int for Prisma's Int filter
+    const minSeatsInt = parseInt(seats, 10) || 1;
     let minTime = undefined;
     let maxTime = undefined;
 
@@ -118,7 +120,7 @@ class RideService {
     }
 
     const candidateRides = await rideRepository.findActiveRidesForSearch({
-      minSeats: seats,
+      minSeats: minSeatsInt,
       minTime,
       maxTime,
     });
