@@ -34,6 +34,7 @@ export default {
           DEFAULT: '#D97706',
           50: '#fffbeb',
           100: '#fef3c7',
+          600: '#d97706',
         },
         error: {
           DEFAULT: '#DC2626',
@@ -65,6 +66,53 @@ export default {
         md: '8px',
         lg: '12px',
         xl: '16px',
+        '2xl': '20px',
+        '3xl': '24px',
+      },
+      boxShadow: {
+        xs: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        sm: '0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.08)',
+        md: '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07)',
+        lg: '0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08)',
+        xl: '0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.08)',
+        glow: '0 0 0 3px rgb(37 99 235 / 0.15)',
+      },
+      animation: {
+        'fade-up': 'fade-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) both',
+        'fade-in': 'fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) both',
+        'scale-in': 'scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+        'slide-in-right': 'slide-in-right 0.35s cubic-bezier(0.4, 0, 0.2, 1) both',
+        shimmer: 'shimmer 1.5s infinite',
+        'spin-slow': 'spin 3s linear infinite',
+      },
+      keyframes: {
+        'fade-up': {
+          from: { opacity: '0', transform: 'translateY(16px)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-in': {
+          from: { opacity: '0' },
+          to:   { opacity: '1' },
+        },
+        'scale-in': {
+          from: { opacity: '0', transform: 'scale(0.92)' },
+          to:   { opacity: '1', transform: 'scale(1)' },
+        },
+        'slide-in-right': {
+          from: { opacity: '0', transform: 'translateX(24px)' },
+          to:   { opacity: '1', transform: 'translateX(0)' },
+        },
+        shimmer: {
+          '0%':   { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+      },
+      backgroundImage: {
+        'gradient-primary': 'linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%)',
+        'gradient-accent':  'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+        'gradient-hero':    'linear-gradient(135deg, #1e40af 0%, #2563EB 50%, #3b82f6 100%)',
+        'gradient-warm':    'linear-gradient(135deg, #D97706 0%, #b45309 100%)',
+        'gradient-purple':  'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
       },
     },
   },
