@@ -1,4 +1,5 @@
-const prisma = require("../lib/prisma");
+const prisma = require("../lib/prismaClient");
+
 
 class ReviewService {
   async createReview(reviewerId, { rideId, bookingId, revieweeId, rating, comment }) {

@@ -1,4 +1,5 @@
-const prisma = require("../lib/prisma");
+const prisma = require("../lib/prismaClient");
+
 
 class SafetyService {
   async getTrustedContacts(userId) {

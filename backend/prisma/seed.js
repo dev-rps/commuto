@@ -6,8 +6,6 @@ const bcrypt = require("bcrypt");
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
 function randomBetween(min, max) {
   return Math.random() * (max - min) + min;
 }
@@ -29,8 +27,6 @@ function pastDate(daysAgo) {
 function futureDate(hoursAhead) {
   return new Date(Date.now() + hoursAhead * 60 * 60 * 1000);
 }
-
-// ─── Static Data ──────────────────────────────────────────────────────────────
 
 const FIRST_NAMES = [
   "Aarav","Aditi","Akash","Anika","Arjun","Avni","Deepak","Divya","Gaurav","Geeta",
@@ -130,57 +126,48 @@ const AUDIT_ACTIONS = [
 const PAYMENT_METHODS = ["CASH", "CARD", "UPI", "WALLET"];
 const WALLET_TXN_TYPES = ["RECHARGE", "RIDE_PAYMENT", "REFUND"];
 
-// ─── Main Seed ────────────────────────────────────────────────────────────────
-
 async function main() {
-  console.log("🌱 Seeding Commuto database with 200+ records per table...\n");
+  console.log("Seeding Commuto database with 200+ records per table...");
 
-  // ── Clean existing data (order matters due to FK constraints) ──────────────
-  console.log("🧹 Cleaning existing data...");
-  await prisma.auditLog.deleteMany({});
-  await prisma.chatMessage.deleteMany({});
-  await prisma.walletTransaction.deleteMany({});
-  await prisma.payment.deleteMany({});
-  await prisma.booking.deleteMany({});
-  await prisma.rideLocation.deleteMany({});
-  await prisma.ride.deleteMany({});
-  await prisma.savedPlace.deleteMany({});
-  await prisma.vehicle.deleteMany({});
-  await prisma.user.deleteMany({});
-  await prisma.organization.deleteMany({});
-  console.log("✅ Clean done.\n");
+  console.log("Cleaning existing data...");
+  await prisma.$executeRawUnsafe(`
+    TRUNCATE "Organization", "User", "Vehicle", "SavedPlace", "Ride", "RideLocation", "Booking", "Payment", "WalletTransaction", "ChatMessage", "AuditLog", "TrustedContact", "SosAlert", "Review", "RecurringRide" CASCADE;
+  `);
+  console.log("Clean done.");
 
-  // ─── Hash password ─────────────────────────────────────────────────────────
   const defaultHash = await bcrypt.hash("pass1234", 10);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 1. ORGANIZATIONS (10 companies)
-  // ═══════════════════════════════════════════════════════════════════════════
-  const orgData = [
-    { name: "Infosys Ltd", fuelCostPerL: 104.50, costPerKm: 8.00 },
-    { name: "Wipro Technologies", fuelCostPerL: 101.25, costPerKm: 7.50 },
-    { name: "TCS (Tata Consultancy Services)", fuelCostPerL: 102.00, costPerKm: 7.80 },
-    { name: "HCL Technologies", fuelCostPerL: 100.00, costPerKm: 7.20 },
-    { name: "Tech Mahindra", fuelCostPerL: 103.00, costPerKm: 7.90 },
-    { name: "Accenture India", fuelCostPerL: 105.00, costPerKm: 8.50 },
-    { name: "IBM India", fuelCostPerL: 99.50, costPerKm: 7.00 },
-    { name: "Capgemini India", fuelCostPerL: 101.75, costPerKm: 7.60 },
-    { name: "Cognizant Technology", fuelCostPerL: 100.50, costPerKm: 7.40 },
-    { name: "Oracle India", fuelCostPerL: 106.00, costPerKm: 8.20 },
+  // 1. ORGANIZATIONS
+  const ORG_SPECS = [
+    { name: "TechCorp Solutions", fuel: 96.50, km: 8.00 },
+    { name: "InnovateInc", fuel: 95.00, km: 7.50 },
+    { name: "Apex Global", fuel: 98.00, km: 9.00 },
+    { name: "CyberPulse", fuel: 94.00, km: 7.00 },
+    { name: "NexGen Systems", fuel: 97.00, km: 8.50 },
+    { name: "CloudMatrix", fuel: 95.50, km: 7.80 },
+    { name: "DataStream Tech", fuel: 96.00, km: 8.20 },
+    { name: "Quantum Labs", fuel: 99.00, km: 9.50 },
+    { name: "EcoDrive Enterprise", fuel: 93.50, km: 6.50 },
+    { name: "OmniSoft India", fuel: 97.50, km: 8.70 },
   ];
   const orgs = [];
-  for (const od of orgData) {
-    const org = await prisma.organization.create({ data: od });
+  const orgSlugs = [];
+  for (const spec of ORG_SPECS) {
+    const org = await prisma.organization.create({
+      data: {
+        name: spec.name,
+        fuelCostPerL: spec.fuel,
+        costPerKm: spec.km,
+      },
+    });
     orgs.push(org);
+    orgSlugs.push(spec.name.toLowerCase().replace(/[^a-z0-9]/g, ""));
   }
-  console.log(`✅ ${orgs.length} Organizations created`);
+  console.log(`${orgs.length} Organizations created`);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 2. USERS – 100 employees + 1 super admin + 10 company admins
-  // ═══════════════════════════════════════════════════════════════════════════
+  // 2. USERS
   const allUsers = [];
 
-  // Super Admin
   const superAdmin = await prisma.user.create({
     data: {
       organizationId: null,
@@ -193,59 +180,27 @@ async function main() {
   });
   allUsers.push(superAdmin);
 
-  // Company Admins (1 per org)
   const companyAdmins = [];
-  const adminNames = [
-    ["Arjun Mehta", "admin@infosys.com"],
-    ["Priya Sharma", "admin@wipro.com"],
-    ["Rajesh Kumar", "admin@tcs.com"],
-    ["Sunita Rao", "admin@hcl.com"],
-    ["Mahesh Naidu", "admin@techmahindra.com"],
-    ["Deepa Krishnan", "admin@accenture.com"],
-    ["Suresh Pillai", "admin@ibm.com"],
-    ["Anjali Desai", "admin@capgemini.com"],
-    ["Ramesh Iyer", "admin@cognizant.com"],
-    ["Kavitha Nair", "admin@oracle.com"],
-  ];
   for (let i = 0; i < orgs.length; i++) {
+    const org = orgs[i];
+    const slug = orgSlugs[i];
     const admin = await prisma.user.create({
       data: {
-        organizationId: orgs[i].id,
-        name: adminNames[i][0],
-        email: adminNames[i][1],
+        organizationId: org.id,
+        name: `${org.name} Admin`,
+        email: `admin${i + 1}@${slug}.com`,
         passwordHash: defaultHash,
         role: "COMPANY_ADMIN",
-        walletBalance: parseFloat(randomBetween(800, 2000).toFixed(2)),
+        walletBalance: 5000.00,
       },
     });
     companyAdmins.push(admin);
     allUsers.push(admin);
   }
 
-  // 100 Employees
   const employees = [];
-  const usedEmails = new Set();
-  // Pre-seed specific named employees
-  const specificEmployees = [
-    { organizationId: orgs[0].id, name: "Neha Sharma", email: "neha@infosys.com", walletBalance: 500.00 },
-    { organizationId: orgs[2].id, name: "Suraj Verma", email: "suraj@tcs.com", walletBalance: 600.00 },
-    { organizationId: orgs[1].id, name: "Amit Patel", email: "amit@wipro.com", walletBalance: 450.00 },
-    { organizationId: orgs[0].id, name: "Rahul Nair", email: "rahul.nair@infosys.com", walletBalance: 350.00 },
-    { organizationId: orgs[0].id, name: "Sneha Reddy", email: "sneha.reddy@infosys.com", walletBalance: 400.00 },
-    { organizationId: orgs[1].id, name: "Karthik Iyer", email: "karthik.iyer@wipro.com", walletBalance: 300.00 },
-  ];
-  for (const se of specificEmployees) {
-    usedEmails.add(se.email);
-    const emp = await prisma.user.create({
-      data: { ...se, passwordHash: defaultHash, role: "EMPLOYEE" },
-    });
-    employees.push(emp);
-    allUsers.push(emp);
-  }
-
-  // Remaining random employees to reach 100
-  const orgSlugs = ["infosys","wipro","tcs","hcl","techmahindra","accenture","ibm","capgemini","cognizant","oracle"];
-  let empCount = specificEmployees.length;
+  const usedEmails = new Set(allUsers.map(u => u.email));
+  let empCount = 0;
   let attempt = 0;
   while (empCount < 100 && attempt < 5000) {
     attempt++;
@@ -270,11 +225,9 @@ async function main() {
     allUsers.push(emp);
     empCount++;
   }
-  console.log(`✅ ${allUsers.length} Users created (1 super admin + ${companyAdmins.length} admins + ${employees.length} employees)`);
+  console.log(`${allUsers.length} Users created`);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 3. VEHICLES – 100 vehicles (one per driver employee)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // 3. VEHICLES
   const vehicles = [];
   const vehicleOwners = pickN(employees, 100);
   const regNos = new Set();
@@ -303,12 +256,10 @@ async function main() {
     });
     vehicles.push({ vehicle: v, driver: owner, seatingCap: spec.seats });
   }
-  console.log(`✅ ${vehicles.length} Vehicles created`);
+  console.log(`${vehicles.length} Vehicles created`);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 4. SAVED PLACES – ~200 records (avg 2 per employee)
-  // ═══════════════════════════════════════════════════════════════════════════
-  const savedPlacePromises = [];
+  // 4. SAVED PLACES
+  const savedPlaceItems = [];
   for (const emp of employees) {
     const numPlaces = randomInt(1, 4);
     const usedPlaceNames = new Set();
@@ -317,24 +268,18 @@ async function main() {
       do { placeName = pick(SAVED_PLACE_NAMES); } while (usedPlaceNames.has(placeName));
       usedPlaceNames.add(placeName);
       const area = pick(BANGALORE_AREAS);
-      savedPlacePromises.push(
-        prisma.savedPlace.create({
-          data: {
-            userId: emp.id,
-            name: placeName,
-            latitude: area.lat + randomBetween(-0.01, 0.01),
-            longitude: area.lng + randomBetween(-0.01, 0.01),
-          },
-        })
-      );
+      savedPlaceItems.push({
+        userId: emp.id,
+        name: placeName,
+        latitude: area.lat + randomBetween(-0.01, 0.01),
+        longitude: area.lng + randomBetween(-0.01, 0.01),
+      });
     }
   }
-  const savedPlaces = await Promise.all(savedPlacePromises);
-  console.log(`✅ ${savedPlaces.length} Saved Places created`);
+  await prisma.savedPlace.createMany({ data: savedPlaceItems });
+  console.log(`${savedPlaceItems.length} Saved Places created`);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 5. RIDES – 200 rides
-  // ═══════════════════════════════════════════════════════════════════════════
+  // 5. RIDES
   const rides = [];
   for (let i = 0; i < 200; i++) {
     const vInfo = pick(vehicles);
@@ -385,13 +330,11 @@ async function main() {
     });
     rides.push({ ride, farePerSeat, seatingCap, status });
   }
-  console.log(`✅ ${rides.length} Rides created`);
+  console.log(`${rides.length} Rides created`);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 6. RIDE LOCATIONS – 200+ location pings (for completed/in-progress rides)
-  // ═══════════════════════════════════════════════════════════════════════════
+  // 6. RIDE LOCATIONS
   const activeRides = rides.filter(r => ["COMPLETED","IN_PROGRESS","AT_PICKUP"].includes(r.status));
-  const rideLocationPromises = [];
+  const rideLocationItems = [];
   for (const rInfo of activeRides) {
     const numPings = randomInt(3, 8);
     const baseArea = pick(BANGALORE_AREAS);
@@ -401,24 +344,18 @@ async function main() {
       lat += randomBetween(-0.003, 0.003);
       lng += randomBetween(-0.003, 0.003);
       const ts = new Date(rInfo.ride.departureTime.getTime() + ping * 5 * 60 * 1000);
-      rideLocationPromises.push(
-        prisma.rideLocation.create({
-          data: {
-            rideId: rInfo.ride.id,
-            latitude: lat,
-            longitude: lng,
-            timestamp: ts,
-          },
-        })
-      );
+      rideLocationItems.push({
+        rideId: rInfo.ride.id,
+        latitude: lat,
+        longitude: lng,
+        timestamp: ts,
+      });
     }
   }
-  const rideLocations = await Promise.all(rideLocationPromises);
-  console.log(`✅ ${rideLocations.length} Ride Locations created`);
+  await prisma.rideLocation.createMany({ data: rideLocationItems });
+  console.log(`${rideLocationItems.length} Ride Locations created`);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 7. BOOKINGS – 200 bookings
-  // ═══════════════════════════════════════════════════════════════════════════
+  // 7. BOOKINGS
   const bookings = [];
   const ridesForBooking = rides.filter(r => r.status !== "CANCELLED");
 
@@ -456,12 +393,10 @@ async function main() {
     bookings.push({ booking, totalFare, bStatus });
     bookingCount++;
   }
-  console.log(`✅ ${bookings.length} Bookings created`);
+  console.log(`${bookings.length} Bookings created`);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 8. PAYMENTS – one per booking (200 payments)
-  // ═══════════════════════════════════════════════════════════════════════════
-  const paymentPromises = [];
+  // 8. PAYMENTS
+  const paymentItems = [];
   let payIdx = 1;
   for (const { booking, totalFare, bStatus } of bookings) {
     let pStatus;
@@ -472,58 +407,45 @@ async function main() {
     const method = pick(PAYMENT_METHODS);
     const refId = `pay_${method.toLowerCase()}_${String(payIdx++).padStart(5, "0")}`;
 
-    paymentPromises.push(
-      prisma.payment.create({
-        data: {
-          bookingId: booking.id,
-          method,
-          amount: totalFare,
-          status: pStatus,
-          gatewayRefId: refId,
-        },
-      })
-    );
+    paymentItems.push({
+      bookingId: booking.id,
+      method,
+      amount: totalFare,
+      status: pStatus,
+      gatewayRefId: refId,
+    });
   }
-  const payments = await Promise.all(paymentPromises);
-  console.log(`✅ ${payments.length} Payments created`);
+  await prisma.payment.createMany({ data: paymentItems });
+  console.log(`${paymentItems.length} Payments created`);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 9. WALLET TRANSACTIONS – 200+ transactions
-  // ═══════════════════════════════════════════════════════════════════════════
-  const walletTxnPromises = [];
-  // Initial recharge for every employee and admin
+  // 9. WALLET TRANSACTIONS
+  const walletItems = [];
   for (const user of [...employees, ...companyAdmins]) {
     const rechargeAmt = parseFloat(randomBetween(200, 2000).toFixed(2));
-    walletTxnPromises.push(
-      prisma.walletTransaction.create({
-        data: {
-          userId: user.id,
-          type: "RECHARGE",
-          amount: rechargeAmt,
-          balanceAfter: rechargeAmt,
-        },
-      })
-    );
+    walletItems.push({
+      userId: user.id,
+      type: "RECHARGE",
+      amount: rechargeAmt,
+      balanceAfter: rechargeAmt,
+    });
   }
-  // Additional mixed txns until 200
-  while (walletTxnPromises.length < 200) {
+  while (walletItems.length < 200) {
     const user = pick([...employees, ...companyAdmins]);
     const type = pick(WALLET_TXN_TYPES);
     const amount = parseFloat(randomBetween(50, 500).toFixed(2));
     const balanceAfter = parseFloat(randomBetween(50, 1500).toFixed(2));
-    walletTxnPromises.push(
-      prisma.walletTransaction.create({
-        data: { userId: user.id, type, amount, balanceAfter },
-      })
-    );
+    walletItems.push({
+      userId: user.id,
+      type,
+      amount,
+      balanceAfter,
+    });
   }
-  const walletTxns = await Promise.all(walletTxnPromises);
-  console.log(`✅ ${walletTxns.length} Wallet Transactions created`);
+  await prisma.walletTransaction.createMany({ data: walletItems });
+  console.log(`${walletItems.length} Wallet Transactions created`);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 10. CHAT MESSAGES – 200+ messages
-  // ═══════════════════════════════════════════════════════════════════════════
-  const chatPromises = [];
+  // 10. CHAT MESSAGES
+  const chatItems = [];
   const ridesWithChats = pickN(rides, Math.min(60, rides.length));
   for (const rInfo of ridesWithChats) {
     const numMsgs = randomInt(2, 6);
@@ -534,58 +456,51 @@ async function main() {
     for (let m = 0; m < numMsgs; m++) {
       const sender = pick(participants);
       const sentAt = new Date(rInfo.ride.departureTime.getTime() - randomBetween(5, 120) * 60 * 1000);
-      chatPromises.push(
-        prisma.chatMessage.create({
-          data: {
-            rideId: rInfo.ride.id,
-            senderId: sender.id,
-            message: pick(CHAT_MESSAGES),
-            sentAt,
-          },
-        })
-      );
+      chatItems.push({
+        rideId: rInfo.ride.id,
+        senderId: sender.id,
+        message: pick(CHAT_MESSAGES),
+        sentAt,
+      });
     }
   }
-  const chats = await Promise.all(chatPromises);
-  console.log(`✅ ${chats.length} Chat Messages created`);
+  await prisma.chatMessage.createMany({ data: chatItems });
+  console.log(`${chatItems.length} Chat Messages created`);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // 11. AUDIT LOGS – 200 entries
-  // ═══════════════════════════════════════════════════════════════════════════
-  const auditPromises = [];
+  // 11. AUDIT LOGS
+  const auditItems = [];
   const auditUsers = [...employees, ...companyAdmins, superAdmin];
   for (let i = 0; i < 200; i++) {
     const user = pick(auditUsers);
     const action = pick(AUDIT_ACTIONS);
     const timestamp = pastDate(randomInt(0, 90));
-    auditPromises.push(
-      prisma.auditLog.create({
-        data: { userId: user.id, action, timestamp },
-      })
-    );
+    auditItems.push({
+      userId: user.id,
+      action,
+      timestamp,
+    });
   }
-  const auditLogs = await Promise.all(auditPromises);
-  console.log(`✅ ${auditLogs.length} Audit Logs created`);
+  await prisma.auditLog.createMany({ data: auditItems });
+  console.log(`${auditItems.length} Audit Logs created`);
 
-  // ─── Final Summary ─────────────────────────────────────────────────────────
-  console.log("\n═══════════════════════════════════════════════");
-  console.log("🎉 Seed completed successfully!");
-  console.log("═══════════════════════════════════════════════");
+  console.log("===============================================");
+  console.log("Seed completed successfully!");
+  console.log("===============================================");
   console.log(`  Organizations  : ${orgs.length}`);
-  console.log(`  Users          : ${allUsers.length} (1 super admin + ${companyAdmins.length} admins + ${employees.length} employees)`);
+  console.log(`  Users          : ${allUsers.length}`);
   console.log(`  Vehicles       : ${vehicles.length}`);
-  console.log(`  Saved Places   : ${savedPlaces.length}`);
+  console.log(`  Saved Places   : ${savedPlaceItems.length}`);
   console.log(`  Rides          : ${rides.length}`);
-  console.log(`  Ride Locations : ${rideLocations.length}`);
+  console.log(`  Ride Locations : ${rideLocationItems.length}`);
   console.log(`  Bookings       : ${bookings.length}`);
-  console.log(`  Payments       : ${payments.length}`);
-  console.log(`  Wallet Txns    : ${walletTxns.length}`);
-  console.log(`  Chat Messages  : ${chats.length}`);
-  console.log(`  Audit Logs     : ${auditLogs.length}`);
-  console.log("═══════════════════════════════════════════════");
-  console.log("  🔑 All passwords : pass1234");
-  console.log("  📧 Super Admin  : superadmin@gmail.com");
-  console.log("═══════════════════════════════════════════════\n");
+  console.log(`  Payments       : ${paymentItems.length}`);
+  console.log(`  Wallet Txns    : ${walletItems.length}`);
+  console.log(`  Chat Messages  : ${chatItems.length}`);
+  console.log(`  Audit Logs     : ${auditItems.length}`);
+  console.log("===============================================");
+  console.log("  All passwords : pass1234");
+  console.log("  Super Admin  : superadmin@gmail.com");
+  console.log("===============================================");
 }
 
 main()
@@ -593,7 +508,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error("❌ Seed failed:", e);
+    console.error("Seed failed:", e);
     await prisma.$disconnect();
     process.exit(1);
   });
