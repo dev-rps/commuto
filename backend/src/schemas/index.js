@@ -101,6 +101,18 @@ const rechargeWalletSchema = z.object({
   amount: positiveDecimal,
 });
 
+// ── Chat schemas ────────────────────────────────────────────────────
+const sendMessageSchema = z.object({
+  message: nonEmptyString,
+});
+
+// ── Razorpay verification schema ────────────────────────────────────
+const verifyPaymentSchema = z.object({
+  razorpay_order_id: nonEmptyString,
+  razorpay_payment_id: nonEmptyString,
+  razorpay_signature: nonEmptyString,
+});
+
 // ── Pagination ──────────────────────────────────────────────────────
 const paginationSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -134,6 +146,10 @@ module.exports = {
   initiatePaymentSchema,
   // Wallet
   rechargeWalletSchema,
+  // Chat
+  sendMessageSchema,
+  // Razorpay verification
+  verifyPaymentSchema,
   // Pagination
   paginationSchema,
 };

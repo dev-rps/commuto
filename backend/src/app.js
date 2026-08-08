@@ -4,6 +4,9 @@ const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/authRoutes");
 const vehicleRoutes = require("./routes/vehicleRoutes");
 const rideRoutes = require("./routes/rideRoutes");
+const bookingRoutes = require("./routes/bookingRoutes");
+const walletRoutes = require("./routes/walletRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
 /**
  * Express app factory.
@@ -40,13 +43,9 @@ function createApp() {
   app.use("/api/auth", authRoutes);
   app.use("/api/vehicles", vehicleRoutes);
   app.use("/api/rides", rideRoutes);
-  // Routes are mounted here as modules are built:
-  // app.use("/api/auth",     require("./routes/auth"));
-  // app.use("/api/rides",    require("./routes/rides"));
-  // app.use("/api/bookings", require("./routes/bookings"));
-  // app.use("/api/payments", require("./routes/payments"));
-  // app.use("/api/wallet",   require("./routes/wallet"));
-  // app.use("/api/vehicles", require("./routes/vehicles"));
+  app.use("/api/bookings", bookingRoutes);
+  app.use("/api/wallet", walletRoutes);
+  app.use("/api/reports", reportRoutes);
 
   // ── 404 catch-all ─────────────────────────────────────────────────
   app.use((_req, res) => {
