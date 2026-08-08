@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  COMPANY_ADMIN
+  EMPLOYEE
+}
+
+enum TripStatus {
+  PUBLISHED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingStatus {
+  BOOKED
+  PAYMENT_PENDING
+  PAYMENT_COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum WalletTxnType {
+  RECHARGE
+  RIDE_PAYMENT
+  REFUND
+}
+
+model Organization {
+  id             String   @id @default(uuid())
+  name           String
+  fuelCostPerL   Decimal  @db.Decimal(10, 2) @default(0.00)
+  costPerKm      Decimal  @db.Decimal(10, 2) @default(0.00)
+  createdAt      DateTime @default(now())
+
+  users          User[]
+}
+
+model User {
+  id             String    @id @default(uuid())
+  organizationId String
+  name           String
+  email          String    @unique
+  passwordHash   String
+  role           Role      @default(EMPLOYEE)
+  walletBalance  Decimal   @db.Decimal(10, 2) @default(0.00)
+  createdAt      DateTime  @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  vehicles       Vehicle[]
+  savedPlaces    SavedPlace[]
+  ridesOffered   Ride[]       @relation("DriverRides")
+  ridesBooked    Booking[]    @relation("PassengerBookings")
+  walletTxns     WalletTransaction[]
+  chatMessages   ChatMessage[]
+  auditLogs      AuditLog[]
+
+  @@index([organizationId])
+}
+
+model Vehicle {
+  id                 String   @id @default(uuid())
+  driverId           String
+  model              String
+  registrationNo     String   @unique
+  seatingCap         Int
+  fuelEfficiencyKmpl Float?
+  isActive           Boolean  @default(true)
+
+  driver             User     @relation(fields: [driverId], references: [id])
+  rides              Ride[]
+}
+
+model SavedPlace {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  latitude  Float
+  longitude Float
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Ride {
+  id             String     @id @default(uuid())
+  driverId       String
+  vehicleId      String
+  pickupLoc      String
+  pickupLat      Float
+  pickupLng      Float
+  destination    String
+  destLat        Float
+  destLng        Float
+  departureTime  DateTime
+  availableSeats Int
+  farePerSeat    Decimal    @db.Decimal(10, 2)
+  distanceKm     Float?
+  status         TripStatus @default(PUBLISHED)
+  createdAt      DateTime   @default(now())
+
+  driver         User       @relation("DriverRides", fields: [driverId], references: [id])
+  vehicle        Vehicle    @relation(fields: [vehicleId], references: [id])
+  bookings       Booking[]
+  locations      RideLocation[]
+  chatMessages   ChatMessage[]
+
+  @@index([status])
+  @@index([departureTime])
+}
+
+model RideLocation {
+  id        String   @id @default(uuid())
+  rideId    String
+  latitude  Float
+  longitude Float
+  timestamp DateTime @default(now())
+
+  ride      Ride     @relation(fields: [rideId], references: [id])
+
+  @@index([rideId, timestamp])
+}
+
+model Booking {
+  id             String        @id @default(uuid())
+  rideId         String
+  passengerId    String
+  seatsBooked    Int
+  totalFare      Decimal       @db.Decimal(10, 2)
+  status         BookingStatus @default(BOOKED)
+  createdAt      DateTime      @default(now())
+
+  ride           Ride          @relation(fields: [rideId], references: [id])
+  passenger      User          @relation("PassengerBookings", fields: [passengerId], references: [id])
+  payment        Payment?
+
+  @@index([passengerId])
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  bookingId      String        @unique
+  method         PaymentMethod
+  amount         Decimal       @db.Decimal(10, 2)
+  status         PaymentStatus @default(PENDING)
+  gatewayRefId   String?       // Razorpay test-mode order/payment ID
+  createdAt      DateTime      @default(now())
+
+  booking        Booking       @relation(fields: [bookingId], references: [id])
+}
+
+model WalletTransaction {
+  id             String        @id @default(uuid())
+  userId         String
+  type           WalletTxnType
+  amount         Decimal       @db.Decimal(10, 2)
+  balanceAfter   Decimal       @db.Decimal(10, 2)
+  createdAt      DateTime      @default(now())
+
+  user           User          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  rideId    String
+  senderId  String
+  message   String
+  sentAt    DateTime @default(now())
+
+  ride      Ride     @relation(fields: [rideId], references: [id])
+  sender    User     @relation(fields: [senderId], references: [id])
+
+  @@index([rideId, sentAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String
+  timestamp DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
