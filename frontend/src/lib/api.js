@@ -148,6 +148,10 @@ export async function updateRideStatus(rideId, status) {
   }
   const { data } = await api.patch(`/rides/${rideId}/status`, { status }); return data.ride;
 }
+export async function startRide(rideId, otp) {
+  if (USE_MOCKS) { await delay(); return { id: rideId, status: 'IN_PROGRESS' }; }
+  const { data } = await api.post(`/rides/${rideId}/start`, { otp }); return data.ride;
+}
 
 // ── Bookings ──────────────────────────────────────────────────────
 export async function bookRide(rideId, seatsBooked) {

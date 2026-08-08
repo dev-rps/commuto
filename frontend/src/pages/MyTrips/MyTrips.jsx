@@ -142,6 +142,16 @@ export default function MyTrips() {
                   </div>
                 </div>
 
+                {/* OTP Display for Passengers */}
+                {isTrip && item.otp && rideStatus !== 'COMPLETED' && rideStatus !== 'CANCELLED' && (
+                  <div className="mb-4 p-3 bg-neutral-50 rounded-xl border border-neutral-100 flex items-center justify-between">
+                    <div className="text-sm text-neutral-600">Give this OTP to the driver to start the ride:</div>
+                    <div className="text-xl font-bold tracking-[0.2em] bg-white px-3 py-1 rounded-lg border border-neutral-200">
+                      {item.otp}
+                    </div>
+                  </div>
+                )}
+
                 {/* Footer meta + actions */}
                 <div className="flex items-center justify-between gap-3 pt-3 border-t border-neutral-100 flex-wrap">
                   <div className="flex flex-wrap gap-3 text-xs">

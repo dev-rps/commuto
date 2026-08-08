@@ -2,8 +2,9 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Navigation, Clock, MapPin, ArrowLeft, Share2 } from 'lucide-react';
 import { RouteMap, Spinner, StatusBadge } from '../../components';
-import { getRide } from '../../lib/api';
+import { getRide, updateRideStatus, startRide } from '../../lib/api';
 import { useSocket } from '../../context/SocketContext';
+import { useAuth } from '../../context/AuthContext';
 import { haversineKm } from '../../lib/utils';
 import { useToast } from '../../context/ToastContext';
 
@@ -56,6 +57,7 @@ export default function LiveTracking() {
   const { rideId } = useParams();
   const navigate   = useNavigate();
   const toast      = useToast();
+  const { user }   = useAuth();
   const { socket, events, joinRideRoom, leaveRideRoom } = useSocket();
   const [ride, setRide]         = useState(null);
   const [loading, setLoading]   = useState(true);
@@ -189,6 +191,82 @@ export default function LiveTracking() {
           </div>
         ))}
       </div>
+
+      {/* Driver Controls */}
+      {user?.id === ride.driverId && (
+        <div className="card p-4 mt-4 bg-neutral-50 border border-neutral-200">
+          <h3 className="font-bold text-neutral-900 mb-3">Driver Controls</h3>
+          
+          {ride.status === 'PUBLISHED' && (
+            <button 
+              onClick={async () => {
+                try {
+                  const updated = await updateRideStatus(ride.id, 'AT_PICKUP');
+                  setRide({ ...ride, status: updated.status });
+                  toast.success('Status updated to At Pickup');
+                } catch (e) {
+                  toast.error(e.response?.data?.error || e.message || 'Failed to update status');
+                }
+              }}
+              className="btn-primary w-full"
+            >
+              I have arrived at Pickup
+            </button>
+          )}
+
+          {ride.status === 'AT_PICKUP' && (
+            <div className="space-y-3">
+              <input
+                type="text"
+                maxLength="4"
+                placeholder="Enter 4-digit passenger OTP to start"
+                className="input w-full text-center tracking-[0.5em] text-lg font-bold"
+                id="otpInput"
+              />
+              <button 
+                onClick={async () => {
+                  const otp = document.getElementById('otpInput').value;
+                  if (!otp || otp.length !== 4) return toast.error('Enter valid 4-digit OTP');
+                  try {
+                    const updated = await startRide(ride.id, otp);
+                    setRide({ ...ride, status: updated.status });
+                    toast.success('Ride started!');
+                  } catch (e) {
+                    toast.error(e.response?.data?.error || e.message || 'Failed to start ride');
+                  }
+                }}
+                className="btn-primary w-full"
+                style={{ background: 'var(--gradient-hero)' }}
+              >
+                Verify OTP & Start Ride
+              </button>
+            </div>
+          )}
+
+          {ride.status === 'IN_PROGRESS' && (
+            <button 
+              onClick={async () => {
+                try {
+                  const updated = await updateRideStatus(ride.id, 'COMPLETED');
+                  setRide({ ...ride, status: updated.status });
+                  toast.success('Ride completed!');
+                } catch (e) {
+                  toast.error(e.response?.data?.error || e.message || 'Failed to finish ride');
+                }
+              }}
+              className="btn-primary w-full bg-green-600 hover:bg-green-700 text-white"
+            >
+              Finish Ride
+            </button>
+          )}
+          
+          {ride.status === 'COMPLETED' && (
+            <p className="text-sm text-center text-green-600 font-medium bg-green-50 p-2 rounded-lg">
+              Ride finished successfully
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

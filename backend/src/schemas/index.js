@@ -79,7 +79,7 @@ const searchRideSchema = z.object({
 });
 
 const updateRideStatusSchema = z.object({
-  status: z.enum(["PUBLISHED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
+  status: z.enum(["PUBLISHED", "AT_PICKUP", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
 });
 
 const updateLocationSchema = z.object({

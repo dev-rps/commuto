@@ -88,7 +88,7 @@ class RideService {
     return rideRepository.findByDriverId(driverId);
   }
 
-  async searchRides({ pickupLat, pickupLng, destLat, destLng, pickupLoc, destination, date, time, seats = 1, radiusKm = 15 }) {
+  async searchRides({ pickupLat, pickupLng, destLat, destLng, pickupLoc, destination, date, time, seats = 1, radiusKm = 3 }) {
     // seats comes as a string from query params — coerce to int for Prisma's Int filter
     const minSeatsInt = parseInt(seats, 10) || 1;
     let minTime = undefined;
@@ -100,9 +100,10 @@ class RideService {
       if (time && typeof time === 'string') {
         const targetTime = new Date(`${dateStr}T${time}`);
         if (!isNaN(targetTime.getTime())) {
-          const windowMs = 3 * 60 * 60 * 1000; // ±3 hours around target time
-          minTime = new Date(targetTime.getTime() - windowMs);
-          maxTime = new Date(targetTime.getTime() + windowMs);
+          const minus30m = 30 * 60 * 1000;
+          const plus1h = 1 * 60 * 60 * 1000;
+          minTime = new Date(targetTime.getTime() - minus30m);
+          maxTime = new Date(targetTime.getTime() + plus1h);
         }
       }
 
@@ -233,6 +234,44 @@ class RideService {
     }
 
     return updatedRide;
+  }
+
+  async startRide(rideId, driverId, otp) {
+    const ride = await rideRepository.findById(rideId);
+    if (!ride) {
+      const error = new Error("Ride not found");
+      error.status = 404;
+      throw error;
+    }
+    
+    if (ride.driverId !== driverId) {
+      const error = new Error("Forbidden: You are not the driver of this ride");
+      error.status = 403;
+      throw error;
+    }
+
+    if (ride.status !== "AT_PICKUP" && ride.status !== "PUBLISHED") {
+      const error = new Error("Ride must be AT_PICKUP to start");
+      error.status = 400;
+      throw error;
+    }
+
+    // Verify OTP against any passenger's booking
+    const activeBookings = ride.bookings.filter(b => b.status === "BOOKED" || b.status === "PAYMENT_COMPLETED");
+    if (activeBookings.length === 0) {
+      const error = new Error("No active bookings to start this ride");
+      error.status = 400;
+      throw error;
+    }
+
+    const isValidOtp = activeBookings.some(b => b.otp === otp);
+    if (!isValidOtp) {
+      const error = new Error("Invalid OTP");
+      error.status = 400;
+      throw error;
+    }
+
+    return this.updateRideStatus(rideId, driverId, "IN_PROGRESS");
   }
 
   async postLocation(rideId, driverId, { latitude, longitude }) {

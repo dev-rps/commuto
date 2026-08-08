@@ -23,6 +23,7 @@ router.get("/search", validate(searchRideSchema, "query"), rideController.search
 router.get("/:id", rideController.getRide);
 router.patch("/:id/status", validate(updateRideStatusSchema), rideController.updateStatus);
 router.post("/:id/location", validate(updateLocationSchema), rideController.postLocation);
+router.post("/:id/start", rideController.startRide);
 
 // ── Booking (nested under rides) ────────────────────────────────────
 router.post("/:id/book", validate(createBookingSchema), bookingController.bookRide);

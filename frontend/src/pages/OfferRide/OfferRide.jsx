@@ -93,8 +93,8 @@ export default function OfferRide() {
       const departureTime = new Date(`${form.date}T${form.time}`).toISOString();
       await publishRide({
         vehicleId: form.vehicleId,
-        pickupLoc: form.pickupLoc, pickupLat: 12.9352, pickupLng: 77.6245,
-        destination: form.destination, destLat: 12.8399, destLng: 77.677,
+        pickupLoc: form.pickupLoc, pickupLat: form.pickupLat, pickupLng: form.pickupLng,
+        destination: form.destination, destLat: form.destLat, destLng: form.destLng,
         departureTime,
         availableSeats: Number(form.availableSeats),
         farePerSeat: Number(form.farePerSeat),

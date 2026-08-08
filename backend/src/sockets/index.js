@@ -86,6 +86,17 @@ function setupSockets(io) {
     socket.on("disconnect", (reason) => {
       console.log(`[Socket] ${userId} disconnected (${reason})`);
     });
+
+    // Ride room joins for chat and tracking
+    socket.on("join:ride", (rideId) => {
+      socket.join(`ride:${rideId}`);
+      console.log(`[Socket] ${userId} joined ride:${rideId}`);
+    });
+
+    socket.on("leave:ride", (rideId) => {
+      socket.leave(`ride:${rideId}`);
+      console.log(`[Socket] ${userId} left ride:${rideId}`);
+    });
   });
 
   console.log("⚡ Socket.IO initialized with JWT auth");

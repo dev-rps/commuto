@@ -62,6 +62,19 @@ class RideController {
       next(err);
     }
   }
+
+  async startRide(req, res, next) {
+    try {
+      const { otp } = req.body;
+      if (!otp) {
+        return res.status(400).json({ error: "OTP is required to start the ride" });
+      }
+      const ride = await rideService.startRide(req.params.id, req.user.id, otp);
+      res.json({ ride });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 module.exports = new RideController();

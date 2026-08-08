@@ -53,6 +53,9 @@ class BookingService {
         data: { availableSeats: { decrement: seatsBooked } },
       });
 
+      // 6.5 Generate a random 4-digit OTP
+      const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
       // 7. Create the booking
       const booking = await tx.booking.create({
         data: {
@@ -60,6 +63,7 @@ class BookingService {
           passengerId,
           seatsBooked,
           totalFare,
+          otp,
         },
         include: {
           ride: {
