@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Navigation, Clock, MapPin, ArrowLeft, Share2 } from 'lucide-react';
 import { RouteMap, Spinner, StatusBadge } from '../../components';
@@ -6,6 +6,51 @@ import { getRide } from '../../lib/api';
 import { useSocket } from '../../context/SocketContext';
 import { haversineKm } from '../../lib/utils';
 import { useToast } from '../../context/ToastContext';
+
+// Hook to smoothly interpolate coordinates on position updates
+function useSmoothPosition(targetPos) {
+  const [animatedPos, setAnimatedPos] = useState(targetPos);
+  const animRef = useRef(null);
+
+  useEffect(() => {
+    if (!targetPos) return;
+    if (!animatedPos) {
+      setAnimatedPos(targetPos);
+      return;
+    }
+
+    const startLat = animatedPos.lat;
+    const startLng = animatedPos.lng;
+    const endLat = targetPos.lat;
+    const endLng = targetPos.lng;
+    const startTime = performance.now();
+    const duration = 600; // 600ms smooth lerp transition
+
+    const animate = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease-out cubic formula
+      const ease = 1 - Math.pow(1 - progress, 3);
+
+      setAnimatedPos({
+        lat: startLat + (endLat - startLat) * ease,
+        lng: startLng + (endLng - startLng) * ease,
+      });
+
+      if (progress < 1) {
+        animRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetPos?.lat, targetPos?.lng]);
+
+  return animatedPos || targetPos;
+}
 
 export default function LiveTracking() {
   const { rideId } = useParams();
@@ -16,7 +61,9 @@ export default function LiveTracking() {
   const [loading, setLoading]   = useState(true);
   const [currentPos, setCurrentPos] = useState(null);
   const [eta, setEta]           = useState(null);
-  const intervalRef             = require('react').useRef(null);
+  const intervalRef             = useRef(null);
+
+  const animatedPos = useSmoothPosition(currentPos);
 
   useEffect(() => {
     getRide(rideId).then((r) => {
@@ -25,11 +72,11 @@ export default function LiveTracking() {
     }).catch(() => toast.error('Failed to load ride')).finally(() => setLoading(false));
   }, [rideId]);
 
-  const handleLocationUpdate = require('react').useCallback((data) => {
+  const handleLocationUpdate = useCallback((data) => {
     if (data?.lat != null && data?.lng != null) setCurrentPos({ lat: data.lat, lng: data.lng });
   }, []);
 
-  const handleStatusUpdate = require('react').useCallback((data) => {
+  const handleStatusUpdate = useCallback((data) => {
     if (data?.status && ride) setRide({ ...ride, status: data.status });
   }, [ride]);
 
@@ -71,7 +118,7 @@ export default function LiveTracking() {
   if (loading) return <Spinner label="Loading trip..." />;
   if (!ride) return <div className="text-center py-8 text-neutral-500">Ride not found</div>;
 
-  const distanceLeft = currentPos ? haversineKm(currentPos.lat, currentPos.lng, ride.destLat, ride.destLng).toFixed(1) : '—';
+  const distanceLeft = animatedPos ? haversineKm(animatedPos.lat, animatedPos.lng, ride.destLat, ride.destLng).toFixed(1) : '—';
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
@@ -118,7 +165,7 @@ export default function LiveTracking() {
         <RouteMap
           pickupLat={ride.pickupLat} pickupLng={ride.pickupLng}
           destLat={ride.destLat} destLng={ride.destLng}
-          movingLat={currentPos?.lat} movingLng={currentPos?.lng}
+          movingLat={animatedPos?.lat} movingLng={animatedPos?.lng}
           height="420px" zoom={12}
         />
       </div>

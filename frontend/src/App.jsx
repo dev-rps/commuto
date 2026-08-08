@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { ToastProvider } from './context/ToastContext';
+import { UnreadProvider } from './context/UnreadContext';
 import { AppShell } from './components/layout/AppShell';
 import { Spinner } from './components';
 
@@ -58,7 +59,9 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <SocketProvider>
-              <AppShell />
+              <UnreadProvider>
+                <AppShell />
+              </UnreadProvider>
             </SocketProvider>
           </ProtectedRoute>
         }

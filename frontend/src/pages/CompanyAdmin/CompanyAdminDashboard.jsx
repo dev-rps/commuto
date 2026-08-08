@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { 
-  Building2, Fuel, MapPin, TrendingUp, Users, 
-  BarChart3, Settings, CheckCircle2, AlertCircle, RefreshCw, Car 
+  Building2, Fuel, MapPin, TrendingUp,
+  BarChart3, Settings, CheckCircle2, Car 
 } from 'lucide-react';
 import { getReportSummary, updateOrganizationPolicy } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { Spinner, EmptyState } from '../../components';
 
 export default function CompanyAdminDashboard() {
   const { user } = useAuth();
+  const toast = useToast();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -50,10 +52,11 @@ export default function CompanyAdminDashboard() {
         costPerKm: policyForm.costPerKm,
       });
       setSaveSuccess('Company fuel policy rates updated successfully!');
+      toast.success('Company policy updated!');
       setEditingPolicy(false);
       fetchSummary();
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to update policy rates');
+      toast.error(err.response?.data?.error || 'Failed to update policy rates');
     } finally {
       setSaveLoading(false);
     }

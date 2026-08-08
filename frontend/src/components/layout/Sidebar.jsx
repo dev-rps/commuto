@@ -1,9 +1,10 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Search, Car, Calendar, MapPin, Wallet,
-  BarChart3, Settings, History, Navigation, LogOut, ChevronRight, ShieldCheck, Building2, Code,
+  LayoutDashboard, Search, Car, Calendar, MapPin, Wallet, MessageSquare,
+  BarChart3, Settings, History, Navigation, LogOut, ChevronRight, Building2, Code,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useUnread } from '../../context/UnreadContext';
 import { formatINR } from '../../lib/utils';
 
 const superAdminNav = [
@@ -11,6 +12,7 @@ const superAdminNav = [
   { to: '/dashboard',      icon: LayoutDashboard, label: 'Commuter View' },
   { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
   { to: '/rides/offer',    icon: Navigation,      label: 'Offer a Ride' },
+  { to: '/chat/ride-004',  icon: MessageSquare,   label: 'Chat', isChat: true },
   { to: '/reports',        icon: BarChart3,       label: 'System Analytics' },
   { to: '/wallet',         icon: Wallet,          label: 'Wallet' },
   { to: '/settings',       icon: Settings,        label: 'Settings' },
@@ -23,6 +25,7 @@ const adminNav = [
   { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
   { to: '/rides/offer',    icon: Navigation,      label: 'Offer a Ride' },
   { to: '/trips',          icon: Calendar,        label: 'My Trips' },
+  { to: '/chat/ride-004',  icon: MessageSquare,   label: 'Chat', isChat: true },
   { to: '/vehicles',       icon: Car,             label: 'My Vehicle' },
   { to: '/wallet',         icon: Wallet,          label: 'Wallet' },
   { to: '/places',         icon: MapPin,          label: 'Saved Places' },
@@ -34,6 +37,7 @@ const employeeNav = [
   { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
   { to: '/rides/offer',    icon: Navigation,      label: 'Offer a Ride' },
   { to: '/trips',          icon: Calendar,        label: 'My Trips' },
+  { to: '/chat/ride-004',  icon: MessageSquare,   label: 'Chat', isChat: true },
   { to: '/vehicles',       icon: Car,             label: 'My Vehicle' },
   { to: '/wallet',         icon: Wallet,          label: 'Wallet' },
   { to: '/rides/history',  icon: History,         label: 'Ride History' },
@@ -43,6 +47,7 @@ const employeeNav = [
 
 export function Sidebar({ open, onClose }) {
   const { user, logout } = useAuth();
+  const { unreadCount, resetUnread } = useUnread();
   const navigate = useNavigate();
   const nav = user?.role === 'SUPER_ADMIN' ? superAdminNav : user?.role === 'COMPANY_ADMIN' ? adminNav : employeeNav;
   const initials = user?.name?.split(' ').map((p) => p[0]).slice(0, 2).join('') || '?';
@@ -92,7 +97,10 @@ export function Sidebar({ open, onClose }) {
               <NavLink
                 key={item.to}
                 to={item.to}
-                onClick={onClose}
+                onClick={() => {
+                  if (item.isChat) resetUnread();
+                  onClose?.();
+                }}
                 className={({ isActive }) =>
                   `group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                     isActive
@@ -107,7 +115,12 @@ export function Sidebar({ open, onClose }) {
                       className={`w-4.5 h-4.5 shrink-0 transition-colors ${isActive ? 'text-primary' : 'text-neutral-400 group-hover:text-neutral-600'}`}
                     />
                     <span className="flex-1">{item.label}</span>
-                    {isActive && (
+                    {item.isChat && unreadCount > 0 && (
+                      <span className="flex items-center justify-center bg-error text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] animate-pulse">
+                        {unreadCount}
+                      </span>
+                    )}
+                    {isActive && !item.isChat && (
                       <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                     )}
                   </>

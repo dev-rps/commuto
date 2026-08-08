@@ -1,24 +1,36 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, Users, Wallet, Car, Navigation, ChevronRight, MapPin, ArrowRight } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Calendar, Clock, Users, Wallet, Car, Navigation, ChevronRight, MapPin, ArrowRight, Sparkles } from 'lucide-react';
 import { getMyVehicles, publishRide } from '../../lib/api';
 import { FieldError } from '../../components';
 import { SkeletonCard } from '../../components/Skeleton';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 
 const STEPS = ['Vehicle', 'Route', 'Details'];
 
 export default function OfferRide() {
   const navigate  = useNavigate();
+  const location  = useLocation();
   const toast     = useToast();
+  const { user }  = useAuth();
   const [vehicles, setVehicles]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep]           = useState(0);
   const [errors, setErrors]       = useState({});
+
+  const routeState = location.state || {};
+
   const [form, setForm] = useState({
-    vehicleId: '', pickupLoc: '', destination: '',
-    date: '', time: '', availableSeats: '', farePerSeat: '', distanceKm: '',
+    vehicleId: routeState.vehicleId || '',
+    pickupLoc: routeState.pickupLoc || '',
+    destination: routeState.destination || '',
+    date: routeState.date || '',
+    time: routeState.time || '',
+    availableSeats: routeState.availableSeats || '',
+    farePerSeat: routeState.farePerSeat || '',
+    distanceKm: routeState.confirmedDistance ? routeState.confirmedDistance.toFixed(1) : '',
   });
 
   useEffect(() => {
@@ -72,6 +84,13 @@ export default function OfferRide() {
   };
 
   const selectedVehicle = vehicles.find((v) => v.id === form.vehicleId);
+
+  // Group 3: Suggested fare calculation
+  // suggestedFare = (distanceKm * costPerKm) / averageSeatsAssumption
+  const costPerKm = user?.organization?.costPerKm || 8.0;
+  const distanceVal = Number(form.distanceKm) || 16.5;
+  const seatsVal = Number(form.availableSeats) > 0 ? Number(form.availableSeats) : 3;
+  const suggestedFare = Math.round((distanceVal * costPerKm) / seatsVal);
 
   if (loading) {
     return <div className="max-w-2xl mx-auto space-y-4">
@@ -237,6 +256,17 @@ export default function OfferRide() {
                         value={form.farePerSeat} onChange={handleChange} placeholder="80"
                         className={`input pl-10 ${errors.farePerSeat ? 'input-error' : ''}`} />
                     </div>
+                    {suggestedFare > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, farePerSeat: suggestedFare.toString() })}
+                        className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary border border-primary-200 hover:bg-primary-100 transition-all cursor-pointer shadow-xs"
+                      >
+                        <Sparkles className="w-3 h-3 text-primary shrink-0" />
+                        <span>Suggested: ₹{suggestedFare}/seat</span>
+                        <span className="text-[10px] opacity-75 font-normal ml-0.5">(Tap to autofill)</span>
+                      </button>
+                    )}
                     <FieldError error={errors.farePerSeat} />
                   </div>
                   <div>

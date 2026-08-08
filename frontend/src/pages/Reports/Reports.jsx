@@ -5,8 +5,9 @@ import {
   Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { getReportSummary } from '../../lib/api';
-import { Spinner } from '../../components';
+import { SkeletonStatCard, SkeletonCard } from '../../components/Skeleton';
 import { formatINR } from '../../lib/utils';
+import { EmptyState } from '../../components';
 
 export default function Reports() {
   const [report, setReport] = useState(null);
@@ -14,10 +15,35 @@ export default function Reports() {
 
   useEffect(() => { getReportSummary().then(setReport).catch(() => {}).finally(() => setLoading(false)); }, []);
 
-  if (loading) return <Spinner label="Loading reports..." />;
-  if (!report) return <div className="text-center py-8 text-neutral-500">Failed to load report data</div>;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-neutral-900">Reports & Analytics</h1>
+          <p className="section-desc">Loading fleet analytics summary...</p>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1,2,3,4].map((i) => <SkeletonStatCard key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {[1,2,3].map((i) => <SkeletonStatCard key={i} />)}
+        </div>
+        <SkeletonCard className="h-64" />
+      </div>
+    );
+  }
 
-  const { summary, vehicleBreakdown, fuelEfficiencyTrends } = report;
+  if (!report) {
+    return (
+      <EmptyState
+        icon={BarChart3}
+        title="No reports available"
+        message="Unable to load report summary data at this time."
+      />
+    );
+  }
+
+  const { summary, vehicleBreakdown = [], fuelEfficiencyTrends = [] } = report;
 
   const vehicleChartData = vehicleBreakdown.map((v) => ({
     name: v.model.split(' ').slice(-1)[0],
@@ -50,7 +76,7 @@ export default function Reports() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <StatCard icon={DollarSign} label="Total Fuel Cost" value={formatINR(summary.totalFuelCost)} color="text-warning" />
         <StatCard icon={Car} label="Total Passengers" value={summary.totalPassengers} color="text-primary" />
-        <StatCard icon={TrendingUp} label="Avg Trip Distance" value={`${(summary.totalDistance / summary.totalTrips).toFixed(1)} km`} color="text-accent-600" />
+        <StatCard icon={TrendingUp} label="Avg Trip Distance" value={`${(summary.totalDistance / (summary.totalTrips || 1)).toFixed(1)} km`} color="text-accent-600" />
       </div>
 
       {/* Vehicle-wise cost breakdown */}
@@ -128,7 +154,7 @@ export default function Reports() {
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
-    <div className="card p-5">
+    <div className="card p-5 hover:shadow-md transition-all">
       <Icon className={`w-5 h-5 ${color} mb-2`} />
       <p className="text-2xl font-bold text-neutral-900">{value}</p>
       <p className="text-xs text-neutral-500 mt-1">{label}</p>
