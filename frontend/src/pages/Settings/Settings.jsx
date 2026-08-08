@@ -1,56 +1,189 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Car, Wallet, Factory as History, MapPin, LifeBuoy, ChevronRight } from 'lucide-react';
+import { User, Bell, Shield, ChevronRight, Moon, Info, LogOut, Navigation } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+
+function SettingsRow({ icon: Icon, title, description, action, onClick, danger = false }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-neutral-50 transition-colors group ${danger ? 'hover:bg-error/5' : ''}`}
+    >
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-error/10' : 'bg-neutral-100 group-hover:bg-neutral-200'} transition-colors`}>
+        <Icon className={`w-4.5 h-4.5 ${danger ? 'text-error' : 'text-neutral-500'}`} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-semibold ${danger ? 'text-error' : 'text-neutral-900'}`}>{title}</p>
+        {description && <p className="text-xs text-neutral-500 mt-0.5">{description}</p>}
+      </div>
+      {action || <ChevronRight className="w-4 h-4 text-neutral-300 shrink-0 group-hover:text-neutral-500 transition-colors" />}
+    </button>
+  );
+}
+
+function Toggle({ checked, onChange }) {
+  return (
+    <div className="relative cursor-pointer" onClick={onChange}>
+      <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${checked ? 'bg-primary' : 'bg-neutral-200'}`} />
+      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${checked ? 'translate-x-5' : ''}`} />
+    </div>
+  );
+}
 
 export default function Settings() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate         = useNavigate();
+  const toast            = useToast();
+  const [prefs, setPrefs] = useState({
+    emailNotifs: true,
+    rideAlerts: true,
+    chatNotifs: true,
+    darkMode: false,
+  });
 
-  const links = [
-    { icon: Calendar, label: 'My Trips', desc: 'View booked and offered trips', to: '/trips' },
-    { icon: Car, label: 'My Vehicle', desc: 'Manage your registered vehicles', to: '/vehicles' },
-    { icon: Wallet, label: 'Payment Methods', desc: 'Wallet balance and payment options', to: '/wallet' },
-    { icon: History, label: 'Ride History', desc: 'Past completed and cancelled rides', to: '/rides/history' },
-    { icon: MapPin, label: 'Saved Places', desc: 'Manage your favorite locations', to: '/places' },
-    { icon: LifeBuoy, label: 'Help & Support', desc: 'Get help with your account', to: '/help' },
+  const togglePref = (key) => setPrefs((p) => ({ ...p, [key]: !p[key] }));
+  const initials = user?.name?.split(' ').map((p) => p[0]).slice(0, 2).join('') || '?';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const sections = [
+    {
+      title: 'Account',
+      items: [
+        {
+          icon: User,
+          title: 'Profile Information',
+          description: user?.email,
+          onClick: () => toast.info('Profile editing coming soon'),
+        },
+      ],
+    },
+    {
+      title: 'Notifications',
+      items: [
+        {
+          icon: Bell,
+          title: 'Email Notifications',
+          description: 'Receive booking confirmations via email',
+          action: <Toggle checked={prefs.emailNotifs} onChange={() => togglePref('emailNotifs')} />,
+          onClick: () => togglePref('emailNotifs'),
+        },
+        {
+          icon: Navigation,
+          title: 'Ride Alerts',
+          description: 'Get notified when your ride status changes',
+          action: <Toggle checked={prefs.rideAlerts} onChange={() => togglePref('rideAlerts')} />,
+          onClick: () => togglePref('rideAlerts'),
+        },
+        {
+          icon: Bell,
+          title: 'Chat Messages',
+          description: 'In-app notifications for new messages',
+          action: <Toggle checked={prefs.chatNotifs} onChange={() => togglePref('chatNotifs')} />,
+          onClick: () => togglePref('chatNotifs'),
+        },
+      ],
+    },
+    {
+      title: 'Appearance',
+      items: [
+        {
+          icon: Moon,
+          title: 'Dark Mode',
+          description: 'Coming soon',
+          action: <Toggle checked={prefs.darkMode} onChange={() => toast.info('Dark mode coming soon!')} />,
+          onClick: () => toast.info('Dark mode coming soon!'),
+        },
+      ],
+    },
+    {
+      title: 'Privacy & Security',
+      items: [
+        {
+          icon: Shield,
+          title: 'Privacy Settings',
+          description: 'Manage your data and privacy preferences',
+          onClick: () => toast.info('Privacy settings coming soon'),
+        },
+      ],
+    },
+    {
+      title: 'About',
+      items: [
+        {
+          icon: Info,
+          title: 'About Commuto',
+          description: 'Version 1.0.0 — Enterprise Carpooling Platform',
+          onClick: () => {},
+        },
+      ],
+    },
   ];
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
+    <div className="max-w-xl mx-auto space-y-5">
+      <div>
         <h1 className="text-2xl font-bold text-neutral-900">Settings</h1>
-        <p className="text-sm text-neutral-500 mt-1">Manage your account preferences</p>
+        <p className="section-desc">Manage your account and preferences</p>
       </div>
 
-      <div className="card p-6 mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-primary text-white text-lg font-semibold flex items-center justify-center">
-            {user?.name?.split(' ').map((p) => p[0]).slice(0, 2).join('')}
-          </div>
-          <div>
-            <p className="font-semibold text-neutral-900">{user?.name}</p>
-            <p className="text-sm text-neutral-500">{user?.email}</p>
-            <span className={`badge mt-1 ${user?.role === 'COMPANY_ADMIN' ? 'bg-primary-50 text-primary-700' : 'bg-neutral-100 text-neutral-600'}`}>
-              {user?.role === 'COMPANY_ADMIN' ? 'Company Admin' : 'Employee'}
+      {/* Profile hero card */}
+      <div className="card p-6 flex items-center gap-4">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold shrink-0"
+          style={{ background: 'var(--gradient-primary)', boxShadow: '0 4px 16px rgb(37 99 235 / 0.3)' }}
+        >
+          {initials}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg font-bold text-neutral-900 truncate">{user?.name}</h2>
+          <p className="text-sm text-neutral-500 truncate">{user?.email}</p>
+          <div className="mt-1.5 flex items-center gap-2">
+            <span
+              className="badge text-white text-[10px] font-bold"
+              style={{ background: user?.role === 'COMPANY_ADMIN' ? 'var(--gradient-warm)' : 'var(--gradient-primary)' }}
+            >
+              {user?.role === 'COMPANY_ADMIN' ? '🏢 Admin' : '👤 Employee'}
             </span>
+            {user?.organization?.name && (
+              <span className="badge bg-neutral-100 text-neutral-600 text-[10px]">
+                {user.organization.name}
+              </span>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Settings sections */}
+      {sections.map((section) => (
+        <div key={section.title} className="card overflow-hidden">
+          <div className="px-5 py-3 border-b border-neutral-100">
+            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{section.title}</h3>
+          </div>
+          <div className="divide-y divide-neutral-100">
+            {section.items.map((item) => (
+              <SettingsRow key={item.title} {...item} />
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Danger zone */}
       <div className="card overflow-hidden">
-        {links.map((link, i) => (
-          <button key={link.to} onClick={() => navigate(link.to)}
-            className={`w-full flex items-center gap-4 p-4 text-left hover:bg-neutral-50 transition-colors ${i !== links.length - 1 ? 'border-b border-neutral-100' : ''}`}>
-            <div className="w-10 h-10 rounded-lg bg-neutral-50 flex items-center justify-center shrink-0">
-              <link.icon className="w-5 h-5 text-neutral-600" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-neutral-900">{link.label}</p>
-              <p className="text-xs text-neutral-500">{link.desc}</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-neutral-400" />
-          </button>
-        ))}
+        <div className="px-5 py-3 border-b border-neutral-100">
+          <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Account</h3>
+        </div>
+        <SettingsRow
+          icon={LogOut}
+          title="Sign Out"
+          description="Sign out of your Commuto account"
+          onClick={handleLogout}
+          danger
+        />
       </div>
     </div>
   );

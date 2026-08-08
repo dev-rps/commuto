@@ -1,80 +1,106 @@
 import { useEffect, useState } from 'react';
-import { Factory as History, Navigation } from 'lucide-react';
-import { getMyBookings, getMyRides } from '../../lib/api';
-import { StatusBadge, Spinner, EmptyState } from '../../components';
-import { formatDateTime, formatINR } from '../../lib/utils';
+import { History, Navigation, Calendar, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { getMyBookings } from '../../lib/api';
+import { formatDate, formatDateTime, formatINR } from '../../lib/utils';
+import { StatusBadge, EmptyState } from '../../components';
+import { SkeletonList } from '../../components/Skeleton';
+
+function groupByMonth(bookings) {
+  return bookings.reduce((acc, b) => {
+    const key = new Date(b.ride?.departureTime || b.createdAt).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(b);
+    return acc;
+  }, {});
+}
 
 export default function RideHistory() {
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [bookings, rides] = await Promise.all([getMyBookings(), getMyRides()]);
-        // Completed bookings (as passenger)
-        const completedBookings = bookings
-          .filter((b) => b.status === 'PAYMENT_COMPLETED' || b.status === 'CANCELLED')
-          .map((b) => ({ ...b, type: 'passenger', route: `${b.ride?.pickupLoc} → ${b.ride?.destination}`, departureTime: b.ride?.departureTime, distanceKm: b.ride?.distanceKm }));
-        // Completed rides (as driver)
-        const completedRides = rides
-          .filter((r) => r.status === 'COMPLETED' || r.status === 'CANCELLED')
-          .map((r) => ({ ...r, type: 'driver', route: `${r.pickupLoc} → ${r.destination}`, departureTime: r.departureTime, distanceKm: r.distanceKm, totalFare: r.farePerSeat * (r.seatingCap - r.availableSeats) }));
-        const combined = [...completedBookings, ...completedRides].sort((a, b) => new Date(b.departureTime) - new Date(a.departureTime));
-        setHistory(combined);
-      } finally { setLoading(false); }
-    };
-    load();
+    getMyBookings()
+      .then((b) => setBookings(b.filter((x) => x.status === 'COMPLETED' || x.status === 'CANCELLED')))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <Spinner label="Loading ride history..." />;
+  const grouped = groupByMonth(bookings);
+  const completed = bookings.filter((b) => b.status === 'COMPLETED').length;
+  const totalSpent = bookings.filter((b) => b.status === 'COMPLETED').reduce((s, b) => s + (b.totalFare || 0), 0);
 
   return (
-    <div>
+    <div className="max-w-2xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-neutral-900">Ride History</h1>
-        <p className="text-sm text-neutral-500 mt-1">All your completed and cancelled rides</p>
+        <p className="section-desc">All your past trips in one place</p>
       </div>
 
-      {history.length === 0 ? (
-        <EmptyState icon={History} title="No ride history" message="Your completed and cancelled rides will appear here." />
+      {!loading && bookings.length > 0 && (
+        <div className="grid grid-cols-3 gap-4 mb-6 stagger-children">
+          {[
+            { label: 'Trips Completed', value: completed, gradient: 'var(--gradient-primary)' },
+            { label: 'Total Spent',      value: formatINR(totalSpent), gradient: 'var(--gradient-warm)' },
+            { label: 'Trips Cancelled',  value: bookings.length - completed, gradient: 'linear-gradient(135deg,#94a3b8,#64748b)' },
+          ].map(({ label, value, gradient }) => (
+            <div key={label} className="stat-card text-center">
+              <p className="text-xl font-bold text-neutral-900 animate-fade-up">{value}</p>
+              <p className="text-xs text-neutral-500">{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {loading ? (
+        <SkeletonList count={4} />
+      ) : bookings.length === 0 ? (
+        <EmptyState
+          icon={History}
+          title="No ride history"
+          message="Your completed and cancelled trips will appear here."
+          action={<button onClick={() => navigate('/rides/find')} className="btn-primary"><Navigation className="w-4 h-4" /> Take your first ride</button>}
+        />
       ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-neutral-200 bg-neutral-50">
-                  <th className="text-left font-semibold text-neutral-700 px-4 py-3">Route</th>
-                  <th className="text-left font-semibold text-neutral-700 px-4 py-3">Date</th>
-                  <th className="text-left font-semibold text-neutral-700 px-4 py-3">Role</th>
-                  <th className="text-right font-semibold text-neutral-700 px-4 py-3">Distance</th>
-                  <th className="text-right font-semibold text-neutral-700 px-4 py-3">Fare</th>
-                  <th className="text-center font-semibold text-neutral-700 px-4 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((item) => (
-                  <tr key={item.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Navigation className="w-4 h-4 text-neutral-400 shrink-0" />
-                        <span className="font-medium text-neutral-900">{item.route}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-neutral-600">{formatDateTime(item.departureTime)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`badge ${item.type === 'driver' ? 'bg-primary-50 text-primary-700' : 'bg-neutral-100 text-neutral-600'}`}>
-                        {item.type === 'driver' ? 'Driver' : 'Passenger'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-neutral-600">{item.distanceKm ? `${item.distanceKm} km` : '—'}</td>
-                    <td className="px-4 py-3 text-right font-medium text-neutral-900">{item.totalFare ? formatINR(item.totalFare) : '—'}</td>
-                    <td className="px-4 py-3 text-center"><StatusBadge status={item.status} /></td>
-                  </tr>
+        <div className="space-y-6">
+          {Object.entries(grouped).map(([month, items]) => (
+            <div key={month}>
+              <div className="flex items-center gap-3 mb-3">
+                <Calendar className="w-4 h-4 text-neutral-400" />
+                <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{month}</h3>
+                <div className="flex-1 h-px bg-neutral-200" />
+              </div>
+              <div className="space-y-3 stagger-children">
+                {items.map((b) => (
+                  <div key={b.id} className="card p-4 flex items-center gap-4 hover:shadow-md transition-all">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{
+                        background: b.status === 'COMPLETED' ? 'var(--gradient-accent)' : '#f1f5f9',
+                        boxShadow: b.status === 'COMPLETED' ? '0 2px 8px rgb(16 185 129 / 0.2)' : 'none',
+                      }}
+                    >
+                      <Navigation className={`w-4.5 h-4.5 ${b.status === 'COMPLETED' ? 'text-white' : 'text-neutral-400'}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-neutral-900 truncate">
+                        {b.ride?.pickupLoc || '—'} → {b.ride?.destination || '—'}
+                      </p>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        {formatDateTime(b.ride?.departureTime)} · {b.seatsBooked} seat(s)
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <StatusBadge status={b.status} />
+                      {b.status === 'COMPLETED' && (
+                        <span className="text-sm font-bold text-neutral-900">{formatINR(b.totalFare)}</span>
+                      )}
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
