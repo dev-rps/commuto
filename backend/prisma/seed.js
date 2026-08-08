@@ -32,7 +32,15 @@ async function main() {
     },
   });
 
-  console.log("✅ 2 Organizations created");
+  const org3 = await prisma.organization.create({
+    data: {
+      name: "Tata Consultancy Services",
+      fuelCostPerL: 105.00,
+      costPerKm: 8.50,
+    },
+  });
+
+  console.log("✅ 3 Organizations created");
 
   // ─── Users ───────────────────────────────────────────────────────
   const defaultHash = hashPassword("password123");
@@ -141,7 +149,92 @@ async function main() {
     },
   });
 
-  console.log("✅ 2 Admins + 8 Employees created");
+  // TCS Admin
+  const admin3 = await prisma.user.create({
+    data: {
+      organizationId: org3.id,
+      name: "Sanjay Kumar",
+      email: "sanjay.kumar@tcs.com",
+      passwordHash: defaultHash,
+      role: "COMPANY_ADMIN",
+      walletBalance: 0,
+    },
+  });
+
+  // TCS Employees
+  const emp9 = await prisma.user.create({
+    data: {
+      organizationId: org3.id,
+      name: "Meenakshi Iyer",
+      email: "meenakshi.iyer@tcs.com",
+      passwordHash: defaultHash,
+      walletBalance: 400.00,
+    },
+  });
+
+  const emp10 = await prisma.user.create({
+    data: {
+      organizationId: org3.id,
+      name: "Rohan Sharma",
+      email: "rohan.sharma@tcs.com",
+      passwordHash: defaultHash,
+      walletBalance: 650.00,
+    },
+  });
+
+  const emp11 = await prisma.user.create({
+    data: {
+      organizationId: org3.id,
+      name: "Aditi Rao",
+      email: "aditi.rao@tcs.com",
+      passwordHash: defaultHash,
+      walletBalance: 120.00,
+    },
+  });
+
+  // Infosys Employees (Extra)
+  const emp12 = await prisma.user.create({
+    data: {
+      organizationId: org1.id,
+      name: "Amit Patel",
+      email: "amit.patel@infosys.com",
+      passwordHash: defaultHash,
+      walletBalance: 450.00,
+    },
+  });
+
+  const emp13 = await prisma.user.create({
+    data: {
+      organizationId: org1.id,
+      name: "Neha Sen",
+      email: "neha.sen@infosys.com",
+      passwordHash: defaultHash,
+      walletBalance: 280.00,
+    },
+  });
+
+  // Wipro Employees (Extra)
+  const emp14 = await prisma.user.create({
+    data: {
+      organizationId: org2.id,
+      name: "Sunita Das",
+      email: "sunita.das@wipro.com",
+      passwordHash: defaultHash,
+      walletBalance: 320.00,
+    },
+  });
+
+  const emp15 = await prisma.user.create({
+    data: {
+      organizationId: org2.id,
+      name: "Rajesh Kumar",
+      email: "rajesh.kumar@wipro.com",
+      passwordHash: defaultHash,
+      walletBalance: 500.00,
+    },
+  });
+
+  console.log("✅ 3 Admins + 15 Employees created");
 
   // ─── Vehicles ────────────────────────────────────────────────────
   const v1 = await prisma.vehicle.create({
@@ -194,7 +287,37 @@ async function main() {
     },
   });
 
-  console.log("✅ 5 Vehicles created");
+  const v6 = await prisma.vehicle.create({
+    data: {
+      driverId: emp9.id,
+      model: "Honda Elevate",
+      registrationNo: "KA-03-MP-5678",
+      seatingCap: 4,
+      fuelEfficiencyKmpl: 15.0,
+    },
+  });
+
+  const v7 = await prisma.vehicle.create({
+    data: {
+      driverId: emp10.id,
+      model: "Tata Tiago EV",
+      registrationNo: "KA-05-EV-4321",
+      seatingCap: 4,
+      fuelEfficiencyKmpl: null,
+    },
+  });
+
+  const v8 = await prisma.vehicle.create({
+    data: {
+      driverId: emp12.id,
+      model: "Mahindra XUV700",
+      registrationNo: "KA-51-ND-9999",
+      seatingCap: 6,
+      fuelEfficiencyKmpl: 11.5,
+    },
+  });
+
+  console.log("✅ 8 Vehicles created");
 
   // ─── Rides (Bangalore coordinates) ──────────────────────────────
   // Real Bangalore landmarks for sensible map rendering
@@ -309,7 +432,61 @@ async function main() {
     },
   });
 
-  console.log("✅ 6 Rides created (2 past, 1 in-progress, 3 future)");
+  const ride7 = await prisma.ride.create({
+    data: {
+      driverId: emp9.id,
+      vehicleId: v6.id,
+      pickupLoc: "Manyata Tech Park, Bangalore",
+      pickupLat: 13.0451,
+      pickupLng: 77.6266,
+      destination: "Majestic, Bangalore",
+      destLat: 12.9779,
+      destLng: 77.5724,
+      departureTime: new Date(now.getTime() + 4 * hourMs), // 4h from now
+      availableSeats: 3,
+      farePerSeat: 90.00,
+      distanceKm: 13.0,
+      status: "PUBLISHED",
+    },
+  });
+
+  const ride8 = await prisma.ride.create({
+    data: {
+      driverId: emp10.id,
+      vehicleId: v7.id,
+      pickupLoc: "Electronic City Phase 1, Bangalore",
+      pickupLat: 12.8452,
+      pickupLng: 77.6602,
+      destination: "Sarjapur Road, Bangalore",
+      destLat: 12.9118,
+      destLng: 77.6835,
+      departureTime: new Date(now.getTime() - 0.5 * hourMs), // 30 mins ago (in progress)
+      availableSeats: 3,
+      farePerSeat: 70.00,
+      distanceKm: 15.0,
+      status: "IN_PROGRESS",
+    },
+  });
+
+  const ride9 = await prisma.ride.create({
+    data: {
+      driverId: emp12.id,
+      vehicleId: v8.id,
+      pickupLoc: "Bannerghatta Road, Bangalore",
+      pickupLat: 12.8956,
+      pickupLng: 77.5997,
+      destination: "Koramangala, Bangalore",
+      destLat: 12.9352,
+      destLng: 77.6245,
+      departureTime: new Date(now.getTime() - 6 * hourMs), // 6h ago (past)
+      availableSeats: 0,
+      farePerSeat: 50.00,
+      distanceKm: 8.0,
+      status: "COMPLETED",
+    },
+  });
+
+  console.log("✅ 9 Rides created (3 past, 2 in-progress, 4 future)");
 
   // ─── Bookings ────────────────────────────────────────────────────
   const booking1 = await prisma.booking.create({
@@ -382,7 +559,37 @@ async function main() {
     },
   });
 
-  console.log("✅ 7 Bookings created (mixed statuses)");
+  const booking8 = await prisma.booking.create({
+    data: {
+      rideId: ride7.id,
+      passengerId: emp11.id,
+      seatsBooked: 1,
+      totalFare: 90.00,
+      status: "BOOKED",
+    },
+  });
+
+  const booking9 = await prisma.booking.create({
+    data: {
+      rideId: ride8.id,
+      passengerId: emp4.id, // Infosys employee booking TCS ride (cross-org)
+      seatsBooked: 1,
+      totalFare: 70.00,
+      status: "BOOKED",
+    },
+  });
+
+  const booking10 = await prisma.booking.create({
+    data: {
+      rideId: ride9.id,
+      passengerId: emp1.id,
+      seatsBooked: 2,
+      totalFare: 100.00,
+      status: "PAYMENT_COMPLETED",
+    },
+  });
+
+  console.log("✅ 10 Bookings created (mixed statuses)");
 
   // ─── Payments ────────────────────────────────────────────────────
   await prisma.payment.create({
@@ -414,7 +621,16 @@ async function main() {
     },
   });
 
-  console.log("✅ 3 Payments created");
+  await prisma.payment.create({
+    data: {
+      bookingId: booking10.id,
+      method: "WALLET",
+      amount: 100.00,
+      status: "SUCCESS",
+    },
+  });
+
+  console.log("✅ 4 Payments created");
 
   // ─── Wallet Transactions (recharges so balances aren't zero) ───
   const walletUsers = [
@@ -447,17 +663,48 @@ async function main() {
     },
   });
 
-  console.log("✅ 7 WalletTransactions created (6 recharges + 1 ride payment)");
+  const newWalletUsers = [
+    { user: emp9, balance: 400.00 },
+    { user: emp10, balance: 650.00 },
+    { user: emp11, balance: 120.00 },
+    { user: emp12, balance: 450.00 },
+    { user: emp13, balance: 280.00 },
+    { user: emp14, balance: 320.00 },
+    { user: emp15, balance: 500.00 },
+  ];
+
+  for (const { user, balance } of newWalletUsers) {
+    await prisma.walletTransaction.create({
+      data: {
+        userId: user.id,
+        type: "RECHARGE",
+        amount: balance,
+        balanceAfter: balance,
+      },
+    });
+  }
+
+  // Add a RIDE_PAYMENT txn for the completed booking10 (Rahul Nair paid Amit Patel)
+  await prisma.walletTransaction.create({
+    data: {
+      userId: emp1.id,
+      type: "RIDE_PAYMENT",
+      amount: 100.00,
+      balanceAfter: 400.00, // Rahul Nair started with 500, paid 100
+    },
+  });
+
+  console.log("✅ 15 WalletTransactions created (13 recharges + 2 ride payments)");
 
   // ─── Summary ─────────────────────────────────────────────────────
   console.log("\n🎉 Seed complete! Summary:");
-  console.log("   Organizations: 2");
-  console.log("   Users: 10 (2 admins + 8 employees)");
-  console.log("   Vehicles: 5");
-  console.log("   Rides: 6");
-  console.log("   Bookings: 7");
-  console.log("   Payments: 3");
-  console.log("   WalletTransactions: 7");
+  console.log("   Organizations: 3");
+  console.log("   Users: 18 (3 admins + 15 employees)");
+  console.log("   Vehicles: 8");
+  console.log("   Rides: 9");
+  console.log("   Bookings: 10");
+  console.log("   Payments: 4");
+  console.log("   WalletTransactions: 15");
 }
 
 main()
