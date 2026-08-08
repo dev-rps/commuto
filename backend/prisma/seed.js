@@ -344,7 +344,7 @@ async function main() {
 
     const pickupArea = pick(BANGALORE_AREAS);
     const destArea = pick([...BANGALORE_AREAS, ...OFFICE_LOCATIONS]);
-    const statusOptions = ["PUBLISHED","PUBLISHED","PUBLISHED","IN_PROGRESS","COMPLETED","COMPLETED","CANCELLED"];
+    const statusOptions = ["PUBLISHED","PUBLISHED","PUBLISHED","AT_PICKUP","IN_PROGRESS","COMPLETED","COMPLETED","CANCELLED"];
     const status = pick(statusOptions);
 
     let departureTime;
@@ -352,7 +352,7 @@ async function main() {
     if (status === "PUBLISHED") {
       departureTime = futureDate(randomBetween(1, 72));
       availableSeats = randomInt(1, seatingCap - 1);
-    } else if (status === "IN_PROGRESS") {
+    } else if (status === "IN_PROGRESS" || status === "AT_PICKUP") {
       departureTime = new Date(Date.now() - randomBetween(0, 30) * 60 * 1000);
       availableSeats = randomInt(0, seatingCap - 1);
     } else if (status === "COMPLETED") {
@@ -390,7 +390,7 @@ async function main() {
   // ═══════════════════════════════════════════════════════════════════════════
   // 6. RIDE LOCATIONS – 200+ location pings (for completed/in-progress rides)
   // ═══════════════════════════════════════════════════════════════════════════
-  const activeRides = rides.filter(r => ["COMPLETED","IN_PROGRESS"].includes(r.status));
+  const activeRides = rides.filter(r => ["COMPLETED","IN_PROGRESS","AT_PICKUP"].includes(r.status));
   const rideLocationPromises = [];
   for (const rInfo of activeRides) {
     const numPings = randomInt(3, 8);
@@ -442,6 +442,7 @@ async function main() {
       bStatus = pick(["BOOKED","PAYMENT_PENDING","CANCELLED"]);
     }
 
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
     const booking = await prisma.booking.create({
       data: {
         rideId: rInfo.ride.id,
@@ -449,6 +450,7 @@ async function main() {
         seatsBooked,
         totalFare,
         status: bStatus,
+        otp,
       },
     });
     bookings.push({ booking, totalFare, bStatus });
