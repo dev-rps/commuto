@@ -5,15 +5,23 @@ const now = new Date();
 const hourMs = 60 * 60 * 1000;
 
 export const organizations = [
-  { id: 'org-infosys-001', name: 'Infosys Ltd', fuelCostPerL: 104.5, costPerKm: 8.0 },
-  { id: 'org-wipro-001', name: 'Wipro Technologies', fuelCostPerL: 101.25, costPerKm: 7.5 },
+  { id: 'org-techcorp-001',   name: 'TechCorp Solutions',    fuelCostPerL: 96.50, costPerKm: 8.00 },
+  { id: 'org-innovate-001',   name: 'InnovateInc',           fuelCostPerL: 95.00, costPerKm: 7.50 },
+  { id: 'org-apex-001',       name: 'Apex Global',           fuelCostPerL: 98.00, costPerKm: 9.00 },
+  { id: 'org-cyberpulse-001', name: 'CyberPulse',            fuelCostPerL: 94.00, costPerKm: 7.00 },
+  { id: 'org-nexgen-001',     name: 'NexGen Systems',        fuelCostPerL: 97.00, costPerKm: 8.50 },
+  { id: 'org-cloudmatrix-001',name: 'CloudMatrix',           fuelCostPerL: 95.50, costPerKm: 7.80 },
+  { id: 'org-datastream-001', name: 'DataStream Tech',       fuelCostPerL: 96.00, costPerKm: 8.20 },
+  { id: 'org-quantum-001',    name: 'Quantum Labs',          fuelCostPerL: 99.00, costPerKm: 9.50 },
+  { id: 'org-ecodrive-001',   name: 'EcoDrive Enterprise',   fuelCostPerL: 93.50, costPerKm: 6.50 },
+  { id: 'org-omnisoft-001',   name: 'OmniSoft India',        fuelCostPerL: 97.50, costPerKm: 8.70 },
 ];
 
 export const currentUser = {
   id: 'emp-rahul-001',
-  organizationId: 'org-infosys-001',
+  organizationId: 'org-techcorp-001',
   name: 'Rahul Nair',
-  email: 'rahul.nair@infosys.com',
+  email: 'rahul.nair@techcorpsolutions.com',
   role: 'EMPLOYEE',
   walletBalance: 500.0,
   organization: organizations[0],
@@ -21,19 +29,19 @@ export const currentUser = {
 
 export const adminUser = {
   id: 'admin-arjun-001',
-  organizationId: 'org-infosys-001',
+  organizationId: 'org-techcorp-001',
   name: 'Arjun Mehta',
-  email: 'arjun.mehta@infosys.com',
+  email: 'admin1@techcorpsolutions.com',
   role: 'COMPANY_ADMIN',
   walletBalance: 0,
   organization: organizations[0],
 };
 
 export const users = {
-  'emp-rahul-001': { id: 'emp-rahul-001', organizationId: 'org-infosys-001', name: 'Rahul Nair', email: 'rahul.nair@infosys.com', role: 'EMPLOYEE', walletBalance: 500.0 },
-  'emp-sneha-001': { id: 'emp-sneha-001', organizationId: 'org-infosys-001', name: 'Sneha Reddy', email: 'sneha.reddy@infosys.com', role: 'EMPLOYEE', walletBalance: 350.0 },
-  'emp-vikram-001': { id: 'emp-vikram-001', organizationId: 'org-infosys-001', name: 'Vikram Joshi', email: 'vikram.joshi@infosys.com', role: 'EMPLOYEE', walletBalance: 200.0 },
-  'emp-ananya-001': { id: 'emp-ananya-001', organizationId: 'org-infosys-001', name: 'Ananya Gupta', email: 'ananya.gupta@infosys.com', role: 'EMPLOYEE', walletBalance: 750.0 },
+  'emp-rahul-001':  { id: 'emp-rahul-001',  organizationId: 'org-techcorp-001', name: 'Rahul Nair',    email: 'rahul.nair0@techcorpsolutions.com',  role: 'EMPLOYEE', walletBalance: 500.0 },
+  'emp-sneha-001':  { id: 'emp-sneha-001',  organizationId: 'org-techcorp-001', name: 'Sneha Reddy',  email: 'sneha.reddy1@techcorpsolutions.com',  role: 'EMPLOYEE', walletBalance: 350.0 },
+  'emp-vikram-001': { id: 'emp-vikram-001', organizationId: 'org-techcorp-001', name: 'Vikram Joshi', email: 'vikram.joshi2@techcorpsolutions.com', role: 'EMPLOYEE', walletBalance: 200.0 },
+  'emp-ananya-001': { id: 'emp-ananya-001', organizationId: 'org-techcorp-001', name: 'Ananya Gupta', email: 'ananya.gupta3@techcorpsolutions.com', role: 'EMPLOYEE', walletBalance: 750.0 },
 };
 
 export const vehicles = [

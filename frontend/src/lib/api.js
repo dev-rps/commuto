@@ -65,12 +65,8 @@ export async function getMe() {
 }
 export async function getOrganizations() {
   if (USE_MOCKS) { await delay(100); return mock.organizations; }
-  try {
-    const { data } = await api.get('/organizations'); 
-    return data.organizations;
-  } catch (error) {
-    return mock.organizations;
-  }
+  const { data } = await api.get('/organizations');
+  return data.organizations;
 }
 export async function updateOrganizationPolicy(payload) {
   if (USE_MOCKS) { await delay(); return { message: 'Organization policy updated', organization: { ...mock.organizations[0], ...payload } }; }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Building2, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
 import { login as apiLogin, signup as apiSignup, getOrganizations } from '../../lib/api';
@@ -53,9 +53,21 @@ export default function Login() {
   const [formError, setFormError] = useState('');
   const [errors, setErrors] = useState({});
   const [orgs, setOrgs] = useState([]);
+  const [orgsLoading, setOrgsLoading] = useState(false);
+  const [orgsError, setOrgsError] = useState('');
   const [showPass, setShowPass] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Load organizations eagerly so they're ready when user clicks signup
+  useEffect(() => {
+    setOrgsLoading(true);
+    setOrgsError('');
+    getOrganizations()
+      .then(setOrgs)
+      .catch(() => setOrgsError('Could not load organizations. Please check your connection or try again.'))
+      .finally(() => setOrgsLoading(false));
+  }, []);
 
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'EMPLOYEE', organizationId: '' });
 
@@ -97,7 +109,6 @@ export default function Login() {
 
   const switchMode = (newMode) => {
     setMode(newMode); setErrors({}); setFormError('');
-    if (newMode === 'signup' && orgs.length === 0) getOrganizations().then(setOrgs).catch(() => {});
   };
 
   return (
@@ -262,11 +273,22 @@ export default function Login() {
                   <label className="label">Organization</label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                    <select name="organizationId" value={form.organizationId} onChange={handleChange}
-                      className={`input pl-10 ${errors.organizationId ? 'input-error' : ''}`}>
-                      <option value="">Select your organization</option>
-                      {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-                    </select>
+                    {orgsLoading ? (
+                      <div className="input pl-10 flex items-center text-neutral-400">
+                        <span className="w-3.5 h-3.5 rounded-full border-2 border-neutral-300 border-t-primary animate-spin mr-2" />
+                        Loading organizations...
+                      </div>
+                    ) : orgsError ? (
+                      <div className="rounded-xl bg-error/8 border border-error/20 px-4 py-3 text-sm text-error font-medium">
+                        {orgsError}
+                      </div>
+                    ) : (
+                      <select name="organizationId" value={form.organizationId} onChange={handleChange}
+                        className={`input pl-10 ${errors.organizationId ? 'input-error' : ''}`}>
+                        <option value="">Select your organization</option>
+                        {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                      </select>
+                    )}
                   </div>
                   <FieldError error={errors.organizationId} />
                 </div>
@@ -304,40 +326,34 @@ export default function Login() {
               <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setForm({ email: 'superadmin@gmail.com', password: 'pass1234' })}
+                  onClick={() => setForm(f => ({ ...f, email: 'superadmin@gmail.com', password: 'pass1234' }))}
                   className="px-2.5 py-1 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-800 font-medium transition-colors"
                 >
-                  💻 Developer / Super Admin
+                  💻 Super Admin
                 </button>
                 <button
                   type="button"
-                  onClick={() => setForm({ email: 'admin@infosys.com', password: 'pass1234' })}
+                  onClick={() => setForm(f => ({ ...f, email: 'admin1@techcorpsolutions.com', password: 'pass1234' }))}
                   className="px-2.5 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-medium transition-colors"
                 >
-                  🏢 Infosys Admin
+                  🏢 TechCorp Admin
                 </button>
                 <button
                   type="button"
-                  onClick={() => setForm({ email: 'neha@infosys.com', password: 'pass1234' })}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-medium transition-colors"
+                  onClick={() => setForm(f => ({ ...f, email: 'admin2@innovateinc.com', password: 'pass1234' }))}
+                  className="px-2.5 py-1 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-medium transition-colors"
                 >
-                  🚗 Neha (Infosys)
+                  🏢 InnovateInc Admin
                 </button>
                 <button
                   type="button"
-                  onClick={() => setForm({ email: 'suraj@tcs.com', password: 'pass1234' })}
-                  className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 font-medium transition-colors"
-                >
-                  🚗 Suraj (TCS)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setForm({ email: 'amit@wipro.com', password: 'pass1234' })}
+                  onClick={() => setForm(f => ({ ...f, email: 'admin3@apexglobal.com', password: 'pass1234' }))}
                   className="px-2.5 py-1 rounded-lg bg-cyan-100 hover:bg-cyan-200 text-cyan-800 font-medium transition-colors"
                 >
-                  🚗 Amit (Wipro)
+                  🏢 Apex Global Admin
                 </button>
               </div>
+              <p className="text-neutral-400 mt-2 text-[10px]">Employee accounts: any employee email from the org + password <code className="bg-neutral-200 px-1 rounded text-neutral-700">pass1234</code></p>
             </div>
           )}
         </div>

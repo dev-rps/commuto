@@ -16,3 +16,6 @@ services:
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
+      - key: CORS_ORIGIN
+        # Set this to your Vercel frontend URL, e.g. https://commuto.vercel.app
+        sync: false
