@@ -52,6 +52,20 @@ class RideService {
     });
   }
 
+  async getRide(rideId) {
+    const ride = await rideRepository.findById(rideId);
+    if (!ride) {
+      const error = new Error('Ride not found');
+      error.status = 404;
+      throw error;
+    }
+    return ride;
+  }
+
+  async getMyRides(driverId) {
+    return rideRepository.findByDriverId(driverId);
+  }
+
   async searchRides({ pickupLat, pickupLng, destLat, destLng, date, seats = 1, radiusKm = 3 }) {
     let minTime = undefined;
     let maxTime = undefined;

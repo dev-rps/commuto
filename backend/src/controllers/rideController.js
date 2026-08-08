@@ -10,6 +10,24 @@ class RideController {
     }
   }
 
+  async getRide(req, res, next) {
+    try {
+      const ride = await rideService.getRide(req.params.id);
+      res.json({ ride });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getMyRides(req, res, next) {
+    try {
+      const rides = await rideService.getMyRides(req.user.id);
+      res.json({ rides });
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async searchRides(req, res, next) {
     try {
       const rides = await rideService.searchRides(req.query);

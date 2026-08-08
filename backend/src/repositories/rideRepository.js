@@ -93,6 +93,20 @@ class RideRepository {
       orderBy: { timestamp: "asc" },
     });
   }
+  async findByDriverId(driverId) {
+    return prisma.ride.findMany({
+      where: { driverId },
+      include: {
+        vehicle: true,
+        bookings: {
+          include: {
+            passenger: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 }
 
 module.exports = new RideRepository();

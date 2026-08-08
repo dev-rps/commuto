@@ -7,6 +7,8 @@ const rideRoutes = require("./routes/rideRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 const walletRoutes = require("./routes/walletRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const savedPlaceRoutes = require("./routes/savedPlaceRoutes");
+const organizationRoutes = require("./routes/organizationRoutes");
 
 /**
  * Express app factory.
@@ -46,6 +48,8 @@ function createApp() {
   app.use("/api/bookings", bookingRoutes);
   app.use("/api/wallet", walletRoutes);
   app.use("/api/reports", reportRoutes);
+  app.use("/api/saved-places", savedPlaceRoutes);
+  app.use("/api/organizations", organizationRoutes);
 
   // ── 404 catch-all ─────────────────────────────────────────────────
   app.use((_req, res) => {
