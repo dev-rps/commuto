@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as mock from '../mocks/mockData';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-const USE_MOCKS = import.meta.env.VITE_USE_MOCKS !== 'false';
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
 
 const api = axios.create({ baseURL: API_BASE_URL, withCredentials: true });
 
@@ -33,17 +33,34 @@ api.interceptors.response.use(
 
 const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
 
+let activeMockUser = mock.currentUser;
+
 // ── Auth ──────────────────────────────────────────────────────────
 export async function login(email, password) {
-  if (USE_MOCKS) { await delay(); return { user: email.includes('admin') ? mock.adminUser : mock.currentUser, accessToken: 'mock-access-token' }; }
+  if (USE_MOCKS) {
+    await delay();
+    let role = 'EMPLOYEE';
+    if (email === 'superadmin@gmail.com') role = 'SUPER_ADMIN';
+    else if (email.includes('admin')) role = 'COMPANY_ADMIN';
+
+    activeMockUser = {
+      id: `user-${email}`,
+      name: email.split('@')[0].toUpperCase(),
+      email,
+      role,
+      walletBalance: 500,
+      organization: { id: 'org-1', name: email.split('@')[1]?.split('.')[0]?.toUpperCase() || 'Org' },
+    };
+    return { user: activeMockUser, accessToken: 'mock-access-token' };
+  }
   const { data } = await api.post('/auth/login', { email, password }); return data;
 }
 export async function signup(payload) {
-  if (USE_MOCKS) { await delay(); return { user: { ...mock.currentUser, ...payload }, accessToken: 'mock-access-token' }; }
+  if (USE_MOCKS) { await delay(); activeMockUser = { ...mock.currentUser, ...payload }; return { user: activeMockUser, accessToken: 'mock-access-token' }; }
   const { data } = await api.post('/auth/signup', payload); return data;
 }
 export async function getMe() {
-  if (USE_MOCKS) { await delay(100); return mock.currentUser; }
+  if (USE_MOCKS) { await delay(100); return activeMockUser; }
   const { data } = await api.get('/auth/me'); return data.user;
 }
 export async function getOrganizations() {
