@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as mock from '../mocks/mockData';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:4000/api`;
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
 
 const api = axios.create({ baseURL: API_BASE_URL, withCredentials: true });
