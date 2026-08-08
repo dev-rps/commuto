@@ -1,9 +1,11 @@
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const authRoutes = require("./routes/authRoutes");
 
 /**
  * Express app factory.
- * Middleware order: CORS → JSON body parser → request logger.
+ * Middleware order: CORS → JSON body parser → Cookie parser → request logger.
  */
 function createApp() {
   const app = express();
@@ -16,8 +18,9 @@ function createApp() {
     })
   );
 
-  // ── Body parser ───────────────────────────────────────────────────
+  // ── Body parser & Cookies ─────────────────────────────────────────
   app.use(express.json());
+  app.use(cookieParser());
 
   // ── Request logger ────────────────────────────────────────────────
   app.use((req, _res, next) => {
@@ -31,7 +34,8 @@ function createApp() {
     res.json({ status: "ok", service: "commuto-api" });
   });
 
-  // ── Route mounting point ──────────────────────────────────────────
+  // ── Routes ────────────────────────────────────────────────────────
+  app.use("/api/auth", authRoutes);
   // Routes are mounted here as modules are built:
   // app.use("/api/auth",     require("./routes/auth"));
   // app.use("/api/rides",    require("./routes/rides"));

@@ -19,6 +19,8 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
@@ -30,6 +32,7 @@
   },
   "allowScripts": {
     "@prisma/engines@7.9.1": true,
-    "prisma@7.9.1": true
+    "prisma@7.9.1": true,
+    "bcrypt@6.0.0": true
   }
 }

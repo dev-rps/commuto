@@ -1,34 +1,38 @@
-/**
- * Shared Zod schemas — validation-first from day one.
- *
- * Every API module imports/extends schemas from here.
- * This was skipped under pressure last hackathon and became a
- * should-fix item in the final audit. Not skipping it this time.
- */
-
 const { z } = require("zod");
 
 // ── Common primitives ───────────────────────────────────────────────
 const uuid = z.string().uuid();
-const email = z.string().email();
-const nonEmptyString = z.string().min(1, "Must not be empty");
+const email = z.string().email("Invalid email address");
+const nonEmptyString = z.string().trim().min(1, "Must not be empty");
 const latitude = z.number().min(-90).max(90);
 const longitude = z.number().min(-180).max(180);
 const positiveInt = z.number().int().positive();
 const positiveDecimal = z.number().positive();
 
+// ── Password rule: min 8 chars, 1 digit, 1 special char ──────────────
+const passwordRule = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[0-9]/, "Password must contain at least 1 digit")
+  .regex(/[^a-zA-Z0-9]/, "Password must contain at least 1 special character");
+
 // ── Auth schemas ────────────────────────────────────────────────────
-const registerSchema = z.object({
+const signupSchema = z.object({
   name: nonEmptyString,
   email,
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: passwordRule,
+  role: z.enum(["COMPANY_ADMIN", "EMPLOYEE"]).optional().default("EMPLOYEE"),
   organizationId: uuid,
 });
 
 const loginSchema = z.object({
   email,
-  password: nonEmptyString,
+  password: z.string().min(1, "Password is required"),
 });
+
+const updateMeSchema = z.object({
+  name: nonEmptyString.optional(),
+}).strict("Only self-editable profile fields are allowed");
 
 // ── Vehicle schemas ─────────────────────────────────────────────────
 const createVehicleSchema = z.object({
@@ -37,6 +41,14 @@ const createVehicleSchema = z.object({
   seatingCap: positiveInt,
   fuelEfficiencyKmpl: z.number().positive().nullable().optional(),
 });
+
+const updateVehicleSchema = z.object({
+  model: nonEmptyString.optional(),
+  registrationNo: nonEmptyString.optional(),
+  seatingCap: positiveInt.optional(),
+  fuelEfficiencyKmpl: z.number().positive().nullable().optional(),
+  isActive: z.boolean().optional(),
+}).strict();
 
 // ── Ride schemas ────────────────────────────────────────────────────
 const createRideSchema = z.object({
@@ -51,6 +63,25 @@ const createRideSchema = z.object({
   availableSeats: positiveInt,
   farePerSeat: positiveDecimal,
   distanceKm: z.number().positive().nullable().optional(),
+});
+
+const searchRideSchema = z.object({
+  pickupLat: z.coerce.number().min(-90).max(90),
+  pickupLng: z.coerce.number().min(-180).max(180),
+  destLat: z.coerce.number().min(-90).max(90),
+  destLng: z.coerce.number().min(-180).max(180),
+  date: z.string().optional(),
+  seats: z.coerce.number().int().positive().optional().default(1),
+  radiusKm: z.coerce.number().positive().optional().default(3),
+});
+
+const updateRideStatusSchema = z.object({
+  status: z.enum(["PUBLISHED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
+});
+
+const updateLocationSchema = z.object({
+  latitude,
+  longitude,
 });
 
 // ── Booking schemas ─────────────────────────────────────────────────
@@ -86,12 +117,17 @@ module.exports = {
   positiveInt,
   positiveDecimal,
   // Auth
-  registerSchema,
+  signupSchema,
   loginSchema,
+  updateMeSchema,
   // Vehicles
   createVehicleSchema,
+  updateVehicleSchema,
   // Rides
   createRideSchema,
+  searchRideSchema,
+  updateRideStatusSchema,
+  updateLocationSchema,
   // Bookings
   createBookingSchema,
   // Payments
