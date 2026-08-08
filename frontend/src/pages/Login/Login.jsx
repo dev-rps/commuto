@@ -53,19 +53,28 @@ export default function Login() {
   const [formError, setFormError] = useState('');
   const [errors, setErrors] = useState({});
   const [orgs, setOrgs] = useState([]);
-  const [orgsLoading, setOrgsLoading] = useState(false);
-  const [orgsError, setOrgsError] = useState('');
+  const [orgsLoading, setOrgsLoading] = useState(true);
+  const [usingDemoOrgs, setUsingDemoOrgs] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Load organizations eagerly so they're ready when user clicks signup
+  // Load organizations eagerly; gracefully fall back to mock data if API is unreachable
   useEffect(() => {
     setOrgsLoading(true);
-    setOrgsError('');
+    setUsingDemoOrgs(false);
     getOrganizations()
-      .then(setOrgs)
-      .catch(() => setOrgsError('Could not load organizations. Please check your connection or try again.'))
+      .then((data) => {
+        setOrgs(data || []);
+        setUsingDemoOrgs(false);
+      })
+      .catch(() => {
+        // API unreachable — use demo orgs so signup still works
+        import('../../mocks/mockData').then((m) => {
+          setOrgs(m.organizations);
+          setUsingDemoOrgs(true);
+        });
+      })
       .finally(() => setOrgsLoading(false));
   }, []);
 
@@ -278,10 +287,6 @@ export default function Login() {
                         <span className="w-3.5 h-3.5 rounded-full border-2 border-neutral-300 border-t-primary animate-spin mr-2" />
                         Loading organizations...
                       </div>
-                    ) : orgsError ? (
-                      <div className="rounded-xl bg-error/8 border border-error/20 px-4 py-3 text-sm text-error font-medium">
-                        {orgsError}
-                      </div>
                     ) : (
                       <select name="organizationId" value={form.organizationId} onChange={handleChange}
                         className={`input pl-10 ${errors.organizationId ? 'input-error' : ''}`}>
@@ -290,6 +295,11 @@ export default function Login() {
                       </select>
                     )}
                   </div>
+                  {usingDemoOrgs && (
+                    <p className="mt-1.5 text-[11px] text-amber-600 flex items-center gap-1">
+                      ⚠️ Showing demo organizations — backend unreachable. Set <code className="font-mono bg-amber-50 px-1 rounded">VITE_API_URL</code> on Vercel.
+                    </p>
+                  )}
                   <FieldError error={errors.organizationId} />
                 </div>
               </>
