@@ -8,14 +8,13 @@ import { useUnread } from '../../context/UnreadContext';
 import { formatINR } from '../../lib/utils';
 
 const superAdminNav = [
-  { to: '/superadmin',     icon: Code,            label: 'Developer Control' },
+  { to: '/superadmin',     icon: Code,            label: 'Developer & Users Control' },
   { to: '/dashboard',      icon: LayoutDashboard, label: 'Commuter View' },
   { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
   { to: '/rides/offer',    icon: Navigation,      label: 'Offer a Ride' },
   { to: '/chat/ride-004',  icon: MessageSquare,   label: 'Chat', isChat: true },
   { to: '/reports',        icon: BarChart3,       label: 'System Analytics' },
-  { to: '/wallet',         icon: Wallet,          label: 'Wallet' },
-  { to: '/settings',       icon: Settings,        label: 'Settings' },
+  { to: '/settings',       icon: Settings,        label: 'System Settings' },
 ];
 
 const adminNav = [

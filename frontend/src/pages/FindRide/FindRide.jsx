@@ -30,8 +30,8 @@ export default function FindRide() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
-    navigate('/rides/confirm', {
-      state: { ...form, pickupLat: 12.9352, pickupLng: 77.6245, destLat: 12.8399, destLng: 77.677, mode: 'search' },
+    navigate('/rides/available', {
+      state: { ...form, mode: 'search' },
     });
   };
 

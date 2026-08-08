@@ -175,11 +175,12 @@ export async function verifyPayment(bookingId, payload) {
 
 // ── Wallet ────────────────────────────────────────────────────────
 export async function getWallet() {
-  if (USE_MOCKS) { await delay(); return { balance: mock.currentUser.walletBalance, transactions: mock.walletTransactions }; }
+  if (USE_MOCKS) { await delay(); return { walletBalance: mock.currentUser.walletBalance, transactions: mock.walletTransactions }; }
   const { data } = await api.get('/wallet/me'); return data;
 }
 export async function getWalletTransactions() {
-  return getWallet();
+  const data = await getWallet();
+  return Array.isArray(data.transactions) ? data.transactions : Array.isArray(data) ? data : [];
 }
 export async function rechargeWallet(amount) {
   if (USE_MOCKS) { await delay(); const newBalance = mock.currentUser.walletBalance + amount; return { walletBalance: newBalance, message: `Wallet recharged with ₹${amount}`, transaction: { id: `wt-${Date.now()}`, userId: mock.currentUser.id, type: 'RECHARGE', amount, balanceAfter: newBalance } }; }
@@ -218,6 +219,18 @@ export async function getReportSummary() {
 export async function getPlatformOverview() {
   if (USE_MOCKS) { await delay(); return mock.platformOverview || {}; }
   const { data } = await api.get('/reports/platform-overview'); return data;
+}
+export async function getOrgMembers() {
+  if (USE_MOCKS) { await delay(); return []; }
+  const { data } = await api.get('/organizations/my/members'); return data.members;
+}
+export async function getOrgRides() {
+  if (USE_MOCKS) { await delay(); return []; }
+  const { data } = await api.get('/organizations/my/rides'); return data.rides;
+}
+export async function getOrgBookings() {
+  if (USE_MOCKS) { await delay(); return []; }
+  const { data } = await api.get('/organizations/my/bookings'); return data.bookings;
 }
 
 // ── Saved Places ──────────────────────────────────────────────────

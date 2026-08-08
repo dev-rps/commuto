@@ -88,7 +88,8 @@ export default function Login() {
         ? await apiLogin(form.email, form.password)
         : await apiSignup({ name: form.name, email: form.email, password: form.password, role: form.role, organizationId: form.organizationId });
       login(result.user, result.accessToken);
-      navigate('/dashboard');
+      const dest = result.user?.role === 'SUPER_ADMIN' ? '/superadmin' : result.user?.role === 'COMPANY_ADMIN' ? '/admin-dashboard' : '/dashboard';
+      navigate(dest);
     } catch (err) {
       setFormError(err.response?.data?.error || err.message || 'Something went wrong');
     } finally { setLoading(false); }

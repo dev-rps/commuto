@@ -25,7 +25,9 @@ export default function PaymentWallet() {
 
   useEffect(() => {
     getWalletTransactions()
-      .then(setTxns)
+      .then((res) => {
+        setTxns(Array.isArray(res) ? res : []);
+      })
       .catch(() => toast.error('Failed to load transactions'))
       .finally(() => setLoading(false));
   }, []);
@@ -36,10 +38,12 @@ export default function PaymentWallet() {
     setAdding(true);
     try {
       const result = await rechargeWallet(val);
-      const newBalance = result.newBalance ?? (balance + val);
+      const newBalance = Number(result.walletBalance ?? result.newBalance ?? (balance + val));
       setBalance(newBalance);
       login({ ...user, walletBalance: newBalance }, localStorage.getItem('accessToken'));
-      setTxns((prev) => [result.transaction, ...prev].filter(Boolean));
+      if (result.transaction) {
+        setTxns((prev) => [result.transaction, ...(Array.isArray(prev) ? prev : [])]);
+      }
       setAmount('');
       toast.success(`₹${val} added to your wallet! 💳`);
     } catch (err) {

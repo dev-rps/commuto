@@ -42,6 +42,14 @@ class UserRepository {
         role: true,
         walletBalance: true,
         createdAt: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            fuelCostPerL: true,
+            costPerKm: true,
+          },
+        },
       },
     });
   }

@@ -90,8 +90,9 @@ class RideService {
           maxTime = endOfDay;
         }
       }
-    } else {
-      minTime = new Date();
+    // When no date is specified, do NOT filter by time — show all PUBLISHED rides.
+    // Setting minTime=now() would hide rides whose departure time has already passed,
+    // which breaks testing/localhost flows where rides may have a recent departure time.
     }
 
     const candidateRides = await rideRepository.findActiveRidesForSearch({

@@ -10,7 +10,7 @@ export default function SuperAdminDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('transactions');
+  const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchOverview = async () => {
@@ -45,13 +45,20 @@ export default function SuperAdminDashboard() {
     );
   }
 
-  const { orgs = [], usersCount = 0, vehiclesCount = 0, rides = [], bookings = [], payments = [], walletTxns = [] } = data || {};
+  const { orgs = [], usersCount = 0, vehiclesCount = 0, rides = [], bookings = [], payments = [], walletTxns = [], allUsers = [] } = data || {};
 
   // Calculate totals
   const totalPaymentVolume = payments.reduce((sum, p) => sum + (p.status === 'SUCCESS' ? Number(p.amount) : 0), 0);
   const totalWalletVolume = walletTxns.reduce((sum, w) => sum + Number(w.amount), 0);
 
-  // Filter transactions
+  // Filter lists
+  const filteredUsers = allUsers.filter(u =>
+    (u.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (u.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (u.role || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (u.organization?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const filteredWalletTxns = walletTxns.filter(t => 
     (t.user?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (t.user?.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -183,6 +190,16 @@ export default function SuperAdminDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex gap-2 border-b border-neutral-200 w-full sm:w-auto">
             <button
+              onClick={() => setActiveTab('users')}
+              className={`pb-2.5 px-4 text-sm font-semibold border-b-2 transition-colors ${
+                activeTab === 'users'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-700'
+              }`}
+            >
+              👥 Registered Users ({allUsers.length})
+            </button>
+            <button
               onClick={() => setActiveTab('transactions')}
               className={`pb-2.5 px-4 text-sm font-semibold border-b-2 transition-colors ${
                 activeTab === 'transactions'
@@ -190,7 +207,7 @@ export default function SuperAdminDashboard() {
                   : 'border-transparent text-neutral-500 hover:text-neutral-700'
               }`}
             >
-              💳 Wallet & Payment Transactions ({walletTxns.length + payments.length})
+              💳 Transactions ({walletTxns.length + payments.length})
             </button>
             <button
               onClick={() => setActiveTab('rides')}
@@ -215,6 +232,53 @@ export default function SuperAdminDashboard() {
             />
           </div>
         </div>
+
+        {/* Tab 0: Registered Users Table */}
+        {activeTab === 'users' && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-neutral-200 bg-neutral-50 text-neutral-600 font-semibold">
+                  <th className="py-3 px-4">User Name</th>
+                  <th className="py-3 px-4">Email</th>
+                  <th className="py-3 px-4">Role</th>
+                  <th className="py-3 px-4">Organization</th>
+                  <th className="py-3 px-4">Wallet Balance</th>
+                  <th className="py-3 px-4">Joined Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {filteredUsers.map((u) => (
+                  <tr key={u.id} className="hover:bg-neutral-50/80 transition-colors">
+                    <td className="py-3 px-4 font-bold text-neutral-900">{u.name}</td>
+                    <td className="py-3 px-4 text-neutral-600 font-mono text-[11px]">{u.email}</td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                        u.role === 'SUPER_ADMIN' ? 'bg-purple-100 text-purple-800' :
+                        u.role === 'COMPANY_ADMIN' ? 'bg-blue-100 text-blue-800' :
+                        'bg-emerald-100 text-emerald-800'
+                      }`}>
+                        {u.role}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-neutral-700 font-medium">
+                      {u.organization?.name || 'Platform (Super Admin)'}
+                    </td>
+                    <td className="py-3 px-4 font-bold text-neutral-900">
+                      ₹{Number(u.walletBalance || 0).toFixed(2)}
+                    </td>
+                    <td className="py-3 px-4 text-neutral-500">
+                      {new Date(u.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filteredUsers.length === 0 && (
+              <EmptyState title="No users found" message="Try searching for a different user name or email." />
+            )}
+          </div>
+        )}
 
         {/* Tab 1: Transactions Table */}
         {activeTab === 'transactions' && (

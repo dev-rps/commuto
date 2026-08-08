@@ -45,7 +45,7 @@ class ReportRepository {
    * Get platform-wide overview stats, rides, transactions, and org metrics for Super Admin.
    */
   async getPlatformOverview() {
-    const [orgs, usersCount, vehiclesCount, rides, bookings, payments, walletTxns] = await Promise.all([
+    const [orgs, usersCount, vehiclesCount, rides, bookings, payments, walletTxns, allUsers] = await Promise.all([
       prisma.organization.findMany({
         include: {
           users: { select: { id: true, name: true, role: true } },
@@ -85,6 +85,18 @@ class ReportRepository {
         },
         orderBy: { createdAt: "desc" },
       }),
+      prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          walletBalance: true,
+          createdAt: true,
+          organization: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
 
     return {
@@ -95,6 +107,7 @@ class ReportRepository {
       bookings,
       payments,
       walletTxns,
+      allUsers,
     };
   }
 }
