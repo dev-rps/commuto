@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/authRoutes");
+const vehicleRoutes = require("./routes/vehicleRoutes");
 
 /**
  * Express app factory.
@@ -36,6 +37,7 @@ function createApp() {
 
   // ── Routes ────────────────────────────────────────────────────────
   app.use("/api/auth", authRoutes);
+  app.use("/api/vehicles", vehicleRoutes);
   // Routes are mounted here as modules are built:
   // app.use("/api/auth",     require("./routes/auth"));
   // app.use("/api/rides",    require("./routes/rides"));
