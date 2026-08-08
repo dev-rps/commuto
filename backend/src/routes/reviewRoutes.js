@@ -7,7 +7,9 @@ router.use(requireAuth);
 
 
 router.post("/", reviewController.createReview);
-router.get("/user/:userId?", reviewController.getUserReviews);
+router.get("/user", reviewController.getUserReviews);
+router.get("/user/:userId", reviewController.getUserReviews);
+
 router.get("/ride/:rideId", reviewController.getRideReviews);
 
 module.exports = router;
