@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Navigation, X, ArrowRight } from 'lucide-react';
+import { Calendar, Navigation, X, ArrowRight, MessageSquare, Filter } from 'lucide-react';
 import { getMyBookings, getMyRides, cancelBooking } from '../../lib/api';
-import { StatusBadge, Spinner, EmptyState } from '../../components';
+import { StatusBadge, EmptyState } from '../../components';
+import { SkeletonCard } from '../../components/Skeleton';
 import { formatDateTime, formatINR, timeUntil } from '../../lib/utils';
+import { useToast } from '../../context/ToastContext';
+
+const STATUS_FILTERS = ['All', 'BOOKED', 'IN_PROGRESS', 'PAYMENT_PENDING', 'COMPLETED', 'CANCELLED'];
 
 export default function MyTrips() {
   const navigate = useNavigate();
-  const [trips, setTrips] = useState([]);
-  const [offered, setOffered] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('booked');
+  const toast    = useToast();
+  const [trips, setTrips]       = useState([]);
+  const [offered, setOffered]   = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [tab, setTab]           = useState('booked');
+  const [filter, setFilter]     = useState('All');
   const [cancelling, setCancelling] = useState(null);
 
   useEffect(() => {
@@ -27,114 +33,160 @@ export default function MyTrips() {
     setCancelling(bookingId);
     try {
       await cancelBooking(bookingId);
-      setTrips(trips.map((t) => (t.id === bookingId ? { ...t, status: 'CANCELLED' } : t)));
-    } catch (err) { alert(err.message || 'Failed to cancel booking'); }
-    finally { setCancelling(null); }
+      setTrips((prev) => prev.map((t) => t.id === bookingId ? { ...t, status: 'CANCELLED' } : t));
+      toast.success('Booking cancelled');
+    } catch (err) {
+      toast.error(err.message || 'Failed to cancel booking');
+    } finally { setCancelling(null); }
   };
 
-  if (loading) return <Spinner label="Loading trips..." />;
-
-  const showTracking = (trip) => trip.ride?.status === 'IN_PROGRESS';
+  const showList = tab === 'booked' ? trips : offered;
+  const filtered = filter === 'All' ? showList : showList.filter((item) => {
+    const s = tab === 'booked' ? item.status : item.status;
+    return s === filter;
+  });
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-5">
         <h1 className="text-2xl font-bold text-neutral-900">My Trips</h1>
-        <p className="text-sm text-neutral-500 mt-1">Track your booked and offered rides</p>
-      </div>
-      <div className="flex gap-1 mb-6 border-b border-neutral-200">
-        <button onClick={() => setTab('booked')} className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === 'booked' ? 'border-primary text-primary' : 'border-transparent text-neutral-500 hover:text-neutral-700'}`}>
-          Booked ({trips.length})
-        </button>
-        <button onClick={() => setTab('offered')} className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === 'offered' ? 'border-primary text-primary' : 'border-transparent text-neutral-500 hover:text-neutral-700'}`}>
-          Offered ({offered.length})
-        </button>
+        <p className="section-desc">Track your booked and offered rides</p>
       </div>
 
-      {tab === 'booked' && trips.length === 0 && (
-        <EmptyState icon={Calendar} title="No booked trips" message="Find a ride to start your carpooling journey."
-          action={<button onClick={() => navigate('/rides/find')} className="btn-primary">Find a Ride</button>} />
-      )}
-      {tab === 'offered' && offered.length === 0 && (
-        <EmptyState icon={Navigation} title="No offered rides" message="Offer a ride and let colleagues join your carpool."
-          action={<button onClick={() => navigate('/rides/offer')} className="btn-primary">Offer a Ride</button>} />
-      )}
+      {/* Tab bar */}
+      <div className="tab-bar mb-4">
+        <button
+          onClick={() => setTab('booked')}
+          className={`tab-item ${tab === 'booked' ? 'tab-active' : 'tab-inactive'}`}
+        >
+          Booked
+          <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${tab === 'booked' ? 'bg-primary text-white' : 'bg-neutral-100 text-neutral-500'}`}>
+            {trips.length}
+          </span>
+        </button>
+        <button
+          onClick={() => setTab('offered')}
+          className={`tab-item ${tab === 'offered' ? 'tab-active' : 'tab-inactive'}`}
+        >
+          Offered
+          <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${tab === 'offered' ? 'bg-primary text-white' : 'bg-neutral-100 text-neutral-500'}`}>
+            {offered.length}
+          </span>
+        </button>
+      </div>
 
-      {tab === 'booked' && trips.length > 0 && (
-        <div className="space-y-4">
-          {trips.map((trip) => (
-            <div key={trip.id} className="card p-5">
-              <div className="flex items-start justify-between gap-4 mb-3">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={trip.status} />
-                  {trip.ride?.status === 'IN_PROGRESS' && <span className="badge bg-accent-100 text-accent-700 animate-pulse"><span className="w-1.5 h-1.5 rounded-full bg-accent-600" /> Live</span>}
-                </div>
-                <span className="text-xs text-neutral-500">{formatDateTime(trip.ride?.departureTime)}</span>
-              </div>
-              <div className="flex items-start gap-3 mb-3">
-                <div className="flex flex-col items-center pt-1">
-                  <div className="w-2.5 h-2.5 rounded-full bg-primary" />
-                  <div className="w-0.5 h-6 bg-neutral-200" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-accent" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-neutral-900">{trip.ride?.pickupLoc}</p>
-                  <p className="text-sm font-medium text-neutral-900 mt-2">{trip.ride?.destination}</p>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-neutral-100">
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <span className="text-neutral-500"><span className="font-medium text-neutral-700">{trip.seatsBooked}</span> seat(s)</span>
-                  <span className="font-medium text-neutral-900">{formatINR(trip.totalFare)}</span>
-                  {trip.ride && <span className="text-neutral-500">{timeUntil(trip.ride.departureTime)}</span>}
-                </div>
-                <div className="flex gap-2">
-                  {showTracking(trip) && <button onClick={() => navigate(`/tracking/${trip.rideId}`)} className="btn-accent"><Navigation className="w-4 h-4" /> Track Live</button>}
-                  {trip.status === 'BOOKED' && <button onClick={() => handleCancel(trip.id)} disabled={cancelling === trip.id} className="btn-secondary text-error hover:bg-error/5"><X className="w-4 h-4" />{cancelling === trip.id ? 'Cancelling...' : 'Cancel'}</button>}
-                  {trip.status === 'PAYMENT_PENDING' && <button onClick={() => navigate('/wallet', { state: { bookingId: trip.id } })} className="btn-primary">Pay Now <ArrowRight className="w-4 h-4" /></button>}
-                  {trip.ride && trip.ride.status !== 'COMPLETED' && trip.ride.status !== 'CANCELLED' && <button onClick={() => navigate(`/chat/${trip.rideId}`)} className="btn-ghost">Chat</button>}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Status filter */}
+      <div className="flex gap-2 mb-5 overflow-x-auto pb-1 scrollbar-none">
+        {STATUS_FILTERS.map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${
+              filter === f
+                ? 'bg-neutral-900 text-white border-neutral-900'
+                : 'bg-white text-neutral-500 border-neutral-200 hover:border-neutral-300'
+            }`}
+          >
+            {f === 'All' ? 'All' : f.replace('_', ' ')}
+          </button>
+        ))}
+      </div>
 
-      {tab === 'offered' && offered.length > 0 && (
-        <div className="space-y-4">
-          {offered.map((ride) => (
-            <div key={ride.id} className="card p-5">
-              <div className="flex items-start justify-between gap-4 mb-3">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status={ride.status} />
-                  {ride.status === 'IN_PROGRESS' && <span className="badge bg-accent-100 text-accent-700 animate-pulse"><span className="w-1.5 h-1.5 rounded-full bg-accent-600" /> Live</span>}
+      {loading ? (
+        <div className="space-y-4">{[1,2,3].map((i) => <SkeletonCard key={i} />)}</div>
+      ) : filtered.length === 0 ? (
+        tab === 'booked' ? (
+          <EmptyState icon={Calendar} title="No trips found" message="Find a ride to start carpooling."
+            action={<button onClick={() => navigate('/rides/find')} className="btn-primary"><Navigation className="w-4 h-4" /> Find a Ride</button>} />
+        ) : (
+          <EmptyState icon={Navigation} title="No rides offered" message="Share your commute with colleagues."
+            action={<button onClick={() => navigate('/rides/offer')} className="btn-primary"><Navigation className="w-4 h-4" /> Offer a Ride</button>} />
+        )
+      ) : (
+        <div className="space-y-4 stagger-children">
+          {filtered.map((item) => {
+            const isTrip = tab === 'booked';
+            const status = item.status;
+            const rideStatus = isTrip ? item.ride?.status : item.status;
+
+            return (
+              <div key={item.id} className="card p-5 hover:shadow-md transition-all">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <StatusBadge status={status} />
+                    {rideStatus === 'IN_PROGRESS' && (
+                      <span className="badge bg-accent-100 text-accent-700 animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-accent-600" /> Live
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-neutral-400 shrink-0">
+                    {formatDateTime(isTrip ? item.ride?.departureTime : item.departureTime)}
+                  </span>
                 </div>
-                <span className="text-xs text-neutral-500">{formatDateTime(ride.departureTime)}</span>
+
+                {/* Route */}
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="route-line mt-1">
+                    <div className="route-dot-start" />
+                    <div className="route-connector" />
+                    <div className="route-dot-end" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-neutral-900">
+                      {isTrip ? item.ride?.pickupLoc : item.pickupLoc}
+                    </p>
+                    <p className="text-sm font-semibold text-neutral-900">
+                      {isTrip ? item.ride?.destination : item.destination}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Footer meta + actions */}
+                <div className="flex items-center justify-between gap-3 pt-3 border-t border-neutral-100 flex-wrap">
+                  <div className="flex flex-wrap gap-3 text-xs">
+                    {isTrip ? (
+                      <>
+                        <span className="font-semibold text-neutral-900">{formatINR(item.totalFare)}</span>
+                        <span className="text-neutral-500">{item.seatsBooked} seat(s)</span>
+                        {item.ride && <span className="text-neutral-400">{timeUntil(item.ride.departureTime)}</span>}
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-neutral-900">{formatINR(item.farePerSeat)}/seat</span>
+                        <span className="text-neutral-500">{item.availableSeats} seats available</span>
+                        {item.distanceKm && <span className="text-neutral-400">{item.distanceKm} km</span>}
+                      </>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {rideStatus === 'IN_PROGRESS' && (
+                      <button onClick={() => navigate(`/tracking/${isTrip ? item.rideId : item.id}`)} className="btn-accent">
+                        <Navigation className="w-4 h-4" /> Track
+                      </button>
+                    )}
+                    {isTrip && status === 'BOOKED' && (
+                      <button onClick={() => handleCancel(item.id)} disabled={cancelling === item.id}
+                        className="btn-secondary text-error border-error/30 hover:bg-error/5">
+                        <X className="w-4 h-4" />
+                        {cancelling === item.id ? 'Cancelling...' : 'Cancel'}
+                      </button>
+                    )}
+                    {isTrip && status === 'PAYMENT_PENDING' && (
+                      <button onClick={() => navigate('/wallet', { state: { bookingId: item.id } })} className="btn-primary">
+                        Pay Now <ArrowRight className="w-4 h-4" />
+                      </button>
+                    )}
+                    {rideStatus !== 'COMPLETED' && rideStatus !== 'CANCELLED' && (
+                      <button onClick={() => navigate(`/chat/${isTrip ? item.rideId : item.id}`)} className="btn-ghost">
+                        <MessageSquare className="w-4 h-4" /> Chat
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="flex items-start gap-3 mb-3">
-                <div className="flex flex-col items-center pt-1">
-                  <div className="w-2.5 h-2.5 rounded-full bg-primary" />
-                  <div className="w-0.5 h-6 bg-neutral-200" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-accent" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-neutral-900">{ride.pickupLoc}</p>
-                  <p className="text-sm font-medium text-neutral-900 mt-2">{ride.destination}</p>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-neutral-100">
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <span className="text-neutral-500"><span className="font-medium text-neutral-700">{ride.availableSeats}</span> seats available</span>
-                  <span className="font-medium text-neutral-900">{formatINR(ride.farePerSeat)}/seat</span>
-                  <span className="text-neutral-500">{ride.distanceKm ? `${ride.distanceKm} km` : ''}</span>
-                </div>
-                <div className="flex gap-2">
-                  {ride.status === 'IN_PROGRESS' && <button onClick={() => navigate(`/tracking/${ride.id}`)} className="btn-accent"><Navigation className="w-4 h-4" /> Track</button>}
-                  <button onClick={() => navigate(`/chat/${ride.id}`)} className="btn-ghost">Chat</button>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
