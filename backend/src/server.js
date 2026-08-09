@@ -8,11 +8,9 @@ const app = createApp();
 const server = http.createServer(app);
 
 // ── Socket.IO ─────────────────────────────────────────────────────────
+const corsOptions = require("./lib/corsOptions");
 const io = new SocketIOServer(server, {
-  cors: {
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
-    credentials: true,
-  },
+  cors: corsOptions,
 });
 
 setupSockets(io);

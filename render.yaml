@@ -3,7 +3,7 @@ services:
     name: commuto-api
     env: node
     rootDir: backend
-    buildCommand: npm install && npm run build
+    buildCommand: npm install && npm run build && npx prisma db push
     startCommand: npm start
     envVars:
       - key: NODE_ENV
