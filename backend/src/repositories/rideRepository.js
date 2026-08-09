@@ -58,7 +58,9 @@ class RideRepository {
     }
 
     if (organizationId) {
-      where.organizationId = organizationId;
+      where.driver = {
+        organizationId: organizationId,
+      };
     }
 
     return prisma.ride.findMany({

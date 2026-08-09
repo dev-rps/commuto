@@ -85,6 +85,7 @@ const searchRideSchema = z.object({
   destination: z.string().optional(),
   date: z.string().optional(),
   time: z.string().optional(),
+  departureTimeUtc: z.string().optional(),
   seats: z.coerce.number().int().positive().optional().default(1),
   radiusKm: z.coerce.number().positive().optional().default(15),
 });
