@@ -5,6 +5,8 @@ const router = express.Router();
 
 const requireAuth = require("../middleware/requireAuth");
 const requireRole = require("../middleware/requireRole");
+const validate = require("../middleware/validate");
+const { policySchema } = require("../schemas");
 
 // Public route — used during signup so users can pick their org
 router.get("/", async (_req, res, next) => {
@@ -20,9 +22,14 @@ router.get("/", async (_req, res, next) => {
 });
 
 // PATCH /api/organizations/my/policy — company admin updates policy benchmark
-router.patch("/my/policy", requireAuth, requireRole(["COMPANY_ADMIN"]), async (req, res, next) => {
-  try {
-    const { fuelCostPerL, costPerKm } = req.body;
+router.patch(
+  "/my/policy",
+  requireAuth,
+  requireRole(["COMPANY_ADMIN"]),
+  validate(policySchema),
+  async (req, res, next) => {
+    try {
+      const { fuelCostPerL, costPerKm } = req.body;
     const org = await prisma.organization.update({
       where: { id: req.user.organizationId },
       data: {

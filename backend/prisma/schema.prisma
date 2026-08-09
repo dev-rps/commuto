@@ -62,6 +62,7 @@ model User {
   name           String
   email          String    @unique
   passwordHash   String
+  phone          String?
   role           Role      @default(EMPLOYEE)
   walletBalance  Decimal   @db.Decimal(10, 2) @default(0.00)
   createdAt      DateTime  @default(now())

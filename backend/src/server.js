@@ -10,7 +10,7 @@ const server = http.createServer(app);
 // ── Socket.IO ─────────────────────────────────────────────────────────
 const io = new SocketIOServer(server, {
   cors: {
-    origin: true,
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     credentials: true,
   },
 });

@@ -3,7 +3,7 @@ const bookingController = require("../controllers/bookingController");
 const paymentController = require("../controllers/paymentController");
 const requireAuth = require("../middleware/requireAuth");
 const validate = require("../middleware/validate");
-const { initiatePaymentSchema } = require("../schemas");
+const { initiatePaymentSchema, verifyPaymentSchema } = require("../schemas");
 
 const router = express.Router();
 
@@ -23,6 +23,10 @@ router.post(
 );
 
 // POST /api/bookings/:id/payment/verify — Razorpay signature verification
-router.post("/:id/payment/verify", paymentController.verifyPayment);
+router.post(
+  "/:id/payment/verify",
+  validate(verifyPaymentSchema),
+  paymentController.verifyPayment
+);
 
 module.exports = router;

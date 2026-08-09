@@ -199,6 +199,15 @@ class RideService {
 
     const updatedRide = await rideRepository.updateRide(rideId, { status: newStatus });
 
+    // Transition bookings to PAYMENT_PENDING if ride is COMPLETED
+    if (newStatus === "COMPLETED") {
+      const prisma = require("../lib/prismaClient");
+      await prisma.booking.updateMany({
+        where: { rideId, status: "BOOKED" },
+        data: { status: "PAYMENT_PENDING" },
+      });
+    }
+
     // Socket notification
     try {
       const io = getIO();

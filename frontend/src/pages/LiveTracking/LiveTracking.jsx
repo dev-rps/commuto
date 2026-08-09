@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Navigation, Clock, MapPin, ArrowLeft, Share2, CheckCircle, ShieldAlert, Star } from 'lucide-react';
+import { Navigation, Clock, MapPin, ArrowLeft, Share2, CheckCircle, ShieldAlert, Star, PhoneCall } from 'lucide-react';
 import { RouteMap, Spinner, StatusBadge, SosModal, ReviewModal } from '../../components';
-import { getRide, updateRideStatus, startRide, initiatePayment } from '../../lib/api';
+import { getRide, updateRideStatus, startRide, initiatePayment, postLocation } from '../../lib/api';
 import { useSocket } from '../../context/SocketContext';
 import { useAuth } from '../../context/AuthContext';
 import { haversineKm } from '../../lib/utils';
@@ -118,24 +118,54 @@ export default function LiveTracking() {
     if (ride?.status === 'COMPLETED') setShowPaymentModal(true);
   }, [ride?.status]);
 
-  // Mock movement simulation
+  // Real GPS Location tracking for Driver
   useEffect(() => {
-    if (!ride || ride.status !== 'IN_PROGRESS') return;
-    let progress = 0;
-    const steps = 100;
-    const totalMs = 30000;
-    intervalRef.current = setInterval(() => {
-      progress += 1;
-      if (progress >= steps) { clearInterval(intervalRef.current); return; }
-      const t = progress / steps;
-      const lat = ride.pickupLat + (ride.destLat - ride.pickupLat) * t;
-      const lng = ride.pickupLng + (ride.destLng - ride.pickupLng) * t;
-      setCurrentPos({ lat, lng });
-      const remaining = haversineKm(lat, lng, ride.destLat, ride.destLng);
+    if (!ride || ride.status !== 'IN_PROGRESS' || !isDriver) return;
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+    
+    let watchId;
+    // Set up real GPS tracking for the driver
+    watchId = navigator.geolocation.watchPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setCurrentPos({ lat, lng });
+        
+        const remaining = haversineKm(lat, lng, ride.destLat, ride.destLng);
+        setEta(Math.round((remaining / 30) * 60));
+        
+        // Push to server
+        try {
+          await postLocation(ride.id, lat, lng);
+        } catch (e) {
+          console.error("Failed to post location update", e);
+        }
+      },
+      (error) => {
+        console.error("GPS Error:", error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+
+    return () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+    };
+  }, [ride, isDriver, toast]);
+
+  // ETA calculation for Passenger
+  useEffect(() => {
+    if (!isDriver && currentPos && ride) {
+      const remaining = haversineKm(currentPos.lat, currentPos.lng, ride.destLat, ride.destLng);
       setEta(Math.round((remaining / 30) * 60));
-    }, totalMs / steps);
-    return () => clearInterval(intervalRef.current);
-  }, [ride]);
+    }
+  }, [currentPos, ride, isDriver]);
 
   if (loading) return <Spinner label="Loading trip..." />;
   if (!ride) return <div className="text-center py-8 text-neutral-500">Ride not found</div>;
@@ -154,13 +184,20 @@ export default function LiveTracking() {
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <button
-          onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('Link copied!'); }}
-          className="btn-secondary text-xs"
-          aria-label="Share tracking link"
-        >
-          <Share2 className="w-3.5 h-3.5" /> Share
-        </button>
+        <div className="flex gap-2">
+          {!isDriver && ride.driver?.phone && (
+            <a href={`tel:${ride.driver.phone}`} className="btn-secondary text-xs bg-green-50 text-green-700 hover:bg-green-100 border-green-200">
+              <PhoneCall className="w-3.5 h-3.5" /> Call Driver
+            </a>
+          )}
+          <button
+            onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('Link copied!'); }}
+            className="btn-secondary text-xs"
+            aria-label="Share tracking link"
+          >
+            <Share2 className="w-3.5 h-3.5" /> Share
+          </button>
+        </div>
       </div>
 
       {/* Status banner */}
@@ -337,7 +374,7 @@ export default function LiveTracking() {
                 {!isDriver ? (
                   <div className="space-y-3 mb-6">
                     <label className="text-sm font-semibold text-neutral-900">Select Payment Method</label>
-                    {['WALLET', 'UPI', 'CARD'].map((method) => (
+                    {['WALLET', 'UPI', 'CARD', 'CASH'].map((method) => (
                       <button
                         key={method}
                         onClick={() => setPaymentMethod(method)}

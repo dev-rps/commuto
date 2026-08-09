@@ -32,7 +32,18 @@ const loginSchema = z.object({
 
 const updateMeSchema = z.object({
   name: nonEmptyString.optional(),
+  phone: z.string().optional(),
 }).strict("Only self-editable profile fields are allowed");
+
+const completeProfileSchema = z.object({
+  phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"),
+});
+
+// ── Organization schemas ────────────────────────────────────────────
+const policySchema = z.object({
+  fuelCostPerL: z.coerce.number().positive().optional(),
+  costPerKm: z.coerce.number().positive().optional(),
+});
 
 // ── Vehicle schemas ─────────────────────────────────────────────────
 const createVehicleSchema = z.object({
@@ -135,6 +146,9 @@ module.exports = {
   signupSchema,
   loginSchema,
   updateMeSchema,
+  completeProfileSchema,
+  // Organizations
+  policySchema,
   // Vehicles
   createVehicleSchema,
   updateVehicleSchema,

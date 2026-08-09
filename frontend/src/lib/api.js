@@ -155,6 +155,10 @@ export async function startRide(rideId, otp) {
   if (USE_MOCKS) { await delay(); return { id: rideId, status: 'IN_PROGRESS' }; }
   const { data } = await api.post(`/rides/${rideId}/start`, { otp }); return data.ride;
 }
+export async function postLocation(rideId, latitude, longitude) {
+  if (USE_MOCKS) { await delay(100); return { rideId, latitude, longitude }; }
+  const { data } = await api.post(`/rides/${rideId}/location`, { latitude, longitude }); return data.location;
+}
 
 // ── Bookings ──────────────────────────────────────────────────────
 export async function bookRide(rideId, seatsBooked) {

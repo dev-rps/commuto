@@ -9,6 +9,7 @@ import { Spinner } from './components';
 
 const Splash          = lazy(() => import('./pages/Splash/Splash'));
 const Login           = lazy(() => import('./pages/Login/Login'));
+const ProfileCreation = lazy(() => import('./pages/Auth/ProfileCreation'));
 const Dashboard       = lazy(() => import('./pages/Dashboard/Dashboard'));
 const FindRide        = lazy(() => import('./pages/FindRide/FindRide'));
 const RouteConfirmation = lazy(() => import('./pages/RouteConfirmation/RouteConfirmation'));
@@ -22,6 +23,7 @@ const PaymentWallet   = lazy(() => import('./pages/PaymentWallet/PaymentWallet')
 const RideHistory     = lazy(() => import('./pages/RideHistory/RideHistory'));
 const Reports         = lazy(() => import('./pages/Reports/Reports'));
 const Settings        = lazy(() => import('./pages/Settings/Settings'));
+const HelpSupport     = lazy(() => import('./pages/HelpSupport/HelpSupport'));
 const SavedPlaces     = lazy(() => import('./pages/SavedPlaces/SavedPlaces'));
 const Leaderboard       = lazy(() => import('./pages/Leaderboard/Leaderboard'));
 const SuperAdminDashboard = lazy(() => import('./pages/SuperAdmin/SuperAdminDashboard'));
@@ -39,6 +41,9 @@ function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
+  if (!user.phone && window.location.pathname !== '/complete-profile') {
+    return <Navigate to="/complete-profile" replace />;
+  }
   return children;
 }
 
@@ -56,6 +61,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Suspense fallback={<PageLoader />}><Splash /></Suspense>} />
       <Route path="/login" element={user ? <Navigate to={homeDestination} replace /> : <Suspense fallback={<PageLoader />}><Login /></Suspense>} />
+      <Route path="/complete-profile" element={user && !user.phone ? <Suspense fallback={<PageLoader />}><ProfileCreation /></Suspense> : <Navigate to={homeDestination} replace />} />
       <Route
         element={
           <ProtectedRoute>
@@ -83,7 +89,7 @@ function AppRoutes() {
         <Route path="/reports"        element={<Suspense fallback={<PageLoader />}><Reports /></Suspense>} />
         <Route path="/leaderboard"    element={<Suspense fallback={<PageLoader />}><Leaderboard /></Suspense>} />
         <Route path="/settings"       element={<Suspense fallback={<PageLoader />}><Settings /></Suspense>} />
-
+        <Route path="/help"           element={<Suspense fallback={<PageLoader />}><HelpSupport /></Suspense>} />
         <Route path="/places"         element={<Suspense fallback={<PageLoader />}><SavedPlaces /></Suspense>} />
       </Route>
 

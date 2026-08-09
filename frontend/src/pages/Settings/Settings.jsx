@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Bell, Shield, ChevronRight, Moon, Info, LogOut, Navigation } from 'lucide-react';
+import { User, Bell, Shield, ChevronRight, Moon, Info, LogOut, Navigation, Car, MapPin, Wallet, History, MessageCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -59,6 +59,47 @@ export default function Settings() {
           title: 'Profile Information',
           description: user?.email,
           onClick: () => toast.info('Profile editing coming soon'),
+        },
+      ],
+    },
+    {
+      title: 'Navigation',
+      items: [
+        {
+          icon: Navigation,
+          title: 'My Trips',
+          description: 'View your offered rides and upcoming trips',
+          onClick: () => navigate('/trips'),
+        },
+        {
+          icon: Car,
+          title: 'My Vehicles',
+          description: 'Manage your registered vehicles',
+          onClick: () => navigate('/vehicles'),
+        },
+        {
+          icon: Wallet,
+          title: 'Payment & Wallet',
+          description: 'Manage your Commuto wallet and payment methods',
+          onClick: () => navigate('/wallet'),
+        },
+        {
+          icon: History,
+          title: 'Ride History',
+          description: 'View your past completed trips',
+          onClick: () => navigate('/rides/history'),
+        },
+        {
+          icon: MapPin,
+          title: 'Saved Places',
+          description: 'Manage your frequent locations',
+          onClick: () => navigate('/places'),
+        },
+        {
+          icon: MessageCircle,
+          title: 'Help & Support',
+          description: 'Get help with your account or rides',
+          onClick: () => navigate('/help'),
         },
       ],
     },

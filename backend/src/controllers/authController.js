@@ -68,6 +68,16 @@ class AuthController {
       next(err);
     }
   }
+
+  async completeProfile(req, res, next) {
+    try {
+      const { phone } = req.body;
+      const updatedUser = await authService.updateProfile(req.user.id, { phone });
+      res.json({ user: updatedUser });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 module.exports = new AuthController();

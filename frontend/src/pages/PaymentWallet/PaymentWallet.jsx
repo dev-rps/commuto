@@ -9,9 +9,9 @@ import { SkeletonList } from '../../components/Skeleton';
 const QUICK_AMOUNTS = [100, 250, 500, 1000, 2000];
 
 const TXN_ICONS = {
-  CREDIT: { Icon: ArrowDownLeft, color: 'text-accent-600',   bg: 'bg-accent-50'   },
-  DEBIT:  { Icon: ArrowUpRight,  color: 'text-error',        bg: 'bg-error-50'    },
-  REFUND: { Icon: CheckCircle,   color: 'text-primary',      bg: 'bg-primary-50'  },
+  RECHARGE:     { Icon: ArrowDownLeft, color: 'text-accent-600',   bg: 'bg-accent-50'   },
+  RIDE_PAYMENT: { Icon: ArrowUpRight,  color: 'text-error',        bg: 'bg-error-50'    },
+  REFUND:       { Icon: CheckCircle,   color: 'text-primary',      bg: 'bg-primary-50'  },
 };
 
 export default function PaymentWallet() {
@@ -137,8 +137,8 @@ export default function PaymentWallet() {
         ) : (
           <div className="divide-y divide-neutral-100">
             {txns.map((t) => {
-              const { Icon, color, bg } = TXN_ICONS[t.type] || TXN_ICONS.CREDIT;
-              const isCredit = t.type === 'CREDIT' || t.type === 'REFUND';
+              const { Icon, color, bg } = TXN_ICONS[t.type] || TXN_ICONS.RECHARGE;
+              const isCredit = t.type === 'RECHARGE' || t.type === 'REFUND';
               return (
                 <div key={t.id} className="flex items-center gap-4 px-5 py-4 hover:bg-neutral-50 transition-colors">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${bg}`}>
@@ -146,7 +146,7 @@ export default function PaymentWallet() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-neutral-900 truncate">
-                      {t.description || (t.type === 'CREDIT' ? 'Wallet Top-up' : t.type === 'DEBIT' ? 'Ride Payment' : 'Refund')}
+                      {t.description || (t.type === 'RECHARGE' ? 'Wallet Top-up' : t.type === 'RIDE_PAYMENT' ? 'Ride Payment' : 'Refund')}
                     </p>
                     <p className="text-xs text-neutral-400 mt-0.5">{formatDateTime(t.createdAt)}</p>
                   </div>

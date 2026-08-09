@@ -22,13 +22,13 @@ export default function RideHistory() {
 
   useEffect(() => {
     getMyBookings()
-      .then((b) => setBookings(b.filter((x) => x.status === 'COMPLETED' || x.status === 'CANCELLED')))
+      .then((b) => setBookings(b.filter((x) => x.status === 'COMPLETED' || x.status === 'PAYMENT_COMPLETED' || x.status === 'CANCELLED')))
       .finally(() => setLoading(false));
   }, []);
 
   const grouped = groupByMonth(bookings);
-  const completed = bookings.filter((b) => b.status === 'COMPLETED').length;
-  const totalSpent = bookings.filter((b) => b.status === 'COMPLETED').reduce((s, b) => s + (b.totalFare || 0), 0);
+  const completed = bookings.filter((b) => b.status === 'COMPLETED' || b.status === 'PAYMENT_COMPLETED').length;
+  const totalSpent = bookings.filter((b) => b.status === 'COMPLETED' || b.status === 'PAYMENT_COMPLETED').reduce((s, b) => s + (b.totalFare || 0), 0);
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -76,11 +76,11 @@ export default function RideHistory() {
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                       style={{
-                        background: b.status === 'COMPLETED' ? 'var(--gradient-accent)' : '#f1f5f9',
-                        boxShadow: b.status === 'COMPLETED' ? '0 2px 8px rgb(16 185 129 / 0.2)' : 'none',
+                        background: (b.status === 'COMPLETED' || b.status === 'PAYMENT_COMPLETED') ? 'var(--gradient-accent)' : '#f1f5f9',
+                        boxShadow: (b.status === 'COMPLETED' || b.status === 'PAYMENT_COMPLETED') ? '0 2px 8px rgb(16 185 129 / 0.2)' : 'none',
                       }}
                     >
-                      <Navigation className={`w-4.5 h-4.5 ${b.status === 'COMPLETED' ? 'text-white' : 'text-neutral-400'}`} />
+                      <Navigation className={`w-4.5 h-4.5 ${(b.status === 'COMPLETED' || b.status === 'PAYMENT_COMPLETED') ? 'text-white' : 'text-neutral-400'}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-neutral-900 truncate">
@@ -92,7 +92,7 @@ export default function RideHistory() {
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
                       <StatusBadge status={b.status} />
-                      {b.status === 'COMPLETED' && (
+                      {(b.status === 'COMPLETED' || b.status === 'PAYMENT_COMPLETED') && (
                         <span className="text-sm font-bold text-neutral-900">{formatINR(b.totalFare)}</span>
                       )}
                     </div>

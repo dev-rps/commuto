@@ -49,10 +49,10 @@ class PaymentService {
       throw error;
     }
 
-    // Status check — must be BOOKED to initiate payment
-    if (booking.status !== "BOOKED") {
+    // Status check — must be PAYMENT_PENDING to initiate payment for completed rides, or BOOKED
+    if (booking.status !== "BOOKED" && booking.status !== "PAYMENT_PENDING") {
       const error = new Error(
-        `Cannot initiate payment: booking status is "${booking.status}", expected "BOOKED"`
+        `Cannot initiate payment: booking status is "${booking.status}", expected "BOOKED" or "PAYMENT_PENDING"`
       );
       error.status = 400;
       throw error;
@@ -116,13 +116,33 @@ class PaymentService {
           data: { walletBalance: newBalance },
         });
 
-        // Insert WalletTransaction row — never update balance without a history record
+        // Insert WalletTransaction row for passenger
         await tx.walletTransaction.create({
           data: {
             userId,
             type: "RIDE_PAYMENT",
             amount,
             balanceAfter: newBalance,
+          },
+        });
+
+        // Credit driver's wallet
+        const driverId = booking.ride.driver.id;
+        const driver = await tx.user.findUnique({
+          where: { id: driverId },
+          select: { walletBalance: true },
+        });
+        const newDriverBalance = Number(driver.walletBalance) + amount;
+        await tx.user.update({
+          where: { id: driverId },
+          data: { walletBalance: newDriverBalance },
+        });
+        await tx.walletTransaction.create({
+          data: {
+            userId: driverId,
+            type: "RIDE_PAYMENT",
+            amount,
+            balanceAfter: newDriverBalance,
           },
         });
 
@@ -258,6 +278,27 @@ class PaymentService {
       await tx.booking.update({
         where: { id: bookingId },
         data: { status: "PAYMENT_COMPLETED" },
+      });
+
+      // Credit driver's wallet for Razorpay
+      const amount = Number(payment.amount);
+      const driverId = booking.ride.driver.id;
+      const driver = await tx.user.findUnique({
+        where: { id: driverId },
+        select: { walletBalance: true },
+      });
+      const newDriverBalance = Number(driver.walletBalance) + amount;
+      await tx.user.update({
+        where: { id: driverId },
+        data: { walletBalance: newDriverBalance },
+      });
+      await tx.walletTransaction.create({
+        data: {
+          userId: driverId,
+          type: "RIDE_PAYMENT",
+          amount,
+          balanceAfter: newDriverBalance,
+        },
       });
 
       return {
