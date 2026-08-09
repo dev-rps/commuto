@@ -45,7 +45,7 @@ class RideRepository {
     });
   }
 
-  async findActiveRidesForSearch({ minSeats, minTime, maxTime }) {
+  async findActiveRidesForSearch({ minSeats, minTime, maxTime, organizationId }) {
     const where = {
       status: "PUBLISHED",
       availableSeats: { gte: minSeats },
@@ -57,12 +57,16 @@ class RideRepository {
       if (maxTime) where.departureTime.lte = maxTime;
     }
 
+    if (organizationId) {
+      where.organizationId = organizationId;
+    }
+
     return prisma.ride.findMany({
       where,
       include: {
         vehicle: true,
         driver: {
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true, email: true, organizationId: true },
         },
       },
     });

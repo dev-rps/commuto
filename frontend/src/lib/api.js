@@ -106,7 +106,14 @@ export async function searchRides(params) {
     const rides = getStoredMockRides();
     return rides.filter((r) => r.status === 'PUBLISHED' && (r.availableSeats || 1) >= (params?.seats || 1));
   }
-  const { data } = await api.get('/rides/search', { params }); return data.rides;
+  const queryParams = { ...params };
+  if (params?.date && params?.time) {
+    const localDateTime = new Date(`${params.date}T${params.time}`);
+    if (!isNaN(localDateTime.getTime())) {
+      queryParams.departureTimeUtc = localDateTime.toISOString();
+    }
+  }
+  const { data } = await api.get('/rides/search', { params: queryParams }); return data.rides;
 }
 export async function getRide(id) {
   if (USE_MOCKS) {

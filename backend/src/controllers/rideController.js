@@ -30,7 +30,10 @@ class RideController {
 
   async searchRides(req, res, next) {
     try {
-      const rides = await rideService.searchRides(req.query);
+      const rides = await rideService.searchRides({
+        ...req.query,
+        organizationId: req.user.organizationId,
+      });
       res.json({ rides });
     } catch (err) {
       next(err);

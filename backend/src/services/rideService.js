@@ -88,13 +88,21 @@ class RideService {
     return rideRepository.findByDriverId(driverId);
   }
 
-  async searchRides({ pickupLat, pickupLng, destLat, destLng, pickupLoc, destination, date, time, seats = 1, radiusKm = 3 }) {
+  async searchRides({ pickupLat, pickupLng, destLat, destLng, pickupLoc, destination, date, time, departureTimeUtc, organizationId, seats = 1, radiusKm = 3 }) {
     // seats comes as a string from query params — coerce to int for Prisma's Int filter
     const minSeatsInt = parseInt(seats, 10) || 1;
     let minTime = undefined;
     let maxTime = undefined;
 
-    if (date) {
+    if (departureTimeUtc) {
+      const targetTime = new Date(departureTimeUtc);
+      if (!isNaN(targetTime.getTime())) {
+        const minus30m = 30 * 60 * 1000;
+        const plus1h = 1 * 60 * 60 * 1000;
+        minTime = new Date(targetTime.getTime() - minus30m);
+        maxTime = new Date(targetTime.getTime() + plus1h);
+      }
+    } else if (date) {
       const dateStr = typeof date === 'string' ? date.split('T')[0] : new Date(date).toISOString().split('T')[0];
 
       if (time && typeof time === 'string') {
@@ -124,6 +132,7 @@ class RideService {
       minSeats: minSeatsInt,
       minTime,
       maxTime,
+      organizationId,
     });
 
     const matchedRides = candidateRides
