@@ -15,6 +15,43 @@ function haversineDistanceKm(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+/**
+ * Returns the minimum distance (in km) from point P to the line segment A→B.
+ * All coordinates are decimal degrees (lat/lng).
+ * Uses an equirectangular projection approximation — accurate for short segments.
+ */
+function pointToSegmentDistanceKm(pLat, pLng, aLat, aLng, bLat, bLng) {
+  // Convert to approximate Cartesian in km (equirectangular)
+  const R = 6371;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const midLat = toRad((aLat + bLat) / 2);
+
+  const ax = toRad(aLng) * R * Math.cos(midLat);
+  const ay = toRad(aLat) * R;
+  const bx = toRad(bLng) * R * Math.cos(midLat);
+  const by = toRad(bLat) * R;
+  const px = toRad(pLng) * R * Math.cos(midLat);
+  const py = toRad(pLat) * R;
+
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+
+  if (lenSq === 0) {
+    // Segment has zero length — just distance to endpoint A
+    return Math.sqrt((px - ax) ** 2 + (py - ay) ** 2);
+  }
+
+  // Project point P onto the line, clamped to segment [0, 1]
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+
+  const closestX = ax + t * dx;
+  const closestY = ay + t * dy;
+
+  return Math.sqrt((px - closestX) ** 2 + (py - closestY) ** 2);
+}
+
+
 class RideService {
   async publishRide(driverId, rideData) {
     // SRS requirement: Driver must have at least one active vehicle
@@ -135,6 +172,8 @@ class RideService {
       organizationId,
     });
 
+    const CORRIDOR_KM = 0.5; // 500 m along-route corridor
+
     const matchedRides = candidateRides
       .map((ride) => {
         let pickupDist = 0;
@@ -142,15 +181,64 @@ class RideService {
         let isGeoMatch = true;
 
         const hasGeoSearch = pickupLat != null && pickupLng != null && destLat != null && destLng != null;
+        const rideHasCoords = ride.pickupLat != null && ride.pickupLng != null && ride.destLat != null && ride.destLng != null;
 
-        if (pickupLat != null && pickupLng != null && ride.pickupLat != null && ride.pickupLng != null) {
+        if (hasGeoSearch && rideHasCoords) {
+          // ── Corridor check (primary) ────────────────────────────────────────────
+          // Is the searcher's pickup within 500m of the ride's route segment?
+          const searcherPickupToRoute = pointToSegmentDistanceKm(
+            pickupLat, pickupLng,
+            ride.pickupLat, ride.pickupLng,
+            ride.destLat, ride.destLng
+          );
+
+          // Is the searcher's destination within 500m of the ride's route segment?
+          const searcherDestToRoute = pointToSegmentDistanceKm(
+            destLat, destLng,
+            ride.pickupLat, ride.pickupLng,
+            ride.destLat, ride.destLng
+          );
+
+          // ── Directionality check ──────────────────────────────────────────────
+          // Ensure the passenger's trip direction roughly aligns with the ride.
+          // We do this by verifying searcher's pickup is "before" their destination
+          // along the ride's direction (t_pickup <= t_dest on the segment).
+          // This prevents reverse-direction matches.
+          const toRad = (d) => (d * Math.PI) / 180;
+          const midLat = toRad((ride.pickupLat + ride.destLat) / 2);
+          const Rr = 6371;
+          const ax = toRad(ride.pickupLng) * Rr * Math.cos(midLat);
+          const ay = toRad(ride.pickupLat) * Rr;
+          const bx = toRad(ride.destLng) * Rr * Math.cos(midLat);
+          const by = toRad(ride.destLat) * Rr;
+          const dx = bx - ax; const dy = by - ay;
+          const lenSq = dx * dx + dy * dy;
+
+          let isSameDirection = true;
+          if (lenSq > 0) {
+            const px1 = toRad(pickupLng) * Rr * Math.cos(midLat);
+            const py1 = toRad(pickupLat) * Rr;
+            const px2 = toRad(destLng) * Rr * Math.cos(midLat);
+            const py2 = toRad(destLat) * Rr;
+            const t1 = ((px1 - ax) * dx + (py1 - ay) * dy) / lenSq;
+            const t2 = ((px2 - ax) * dx + (py2 - ay) * dy) / lenSq;
+            // Allow if searcher's pickup is before their destination on the route
+            isSameDirection = t1 <= t2 + 0.15; // small tolerance
+          }
+
+          const isCorridorMatch =
+            searcherPickupToRoute <= CORRIDOR_KM &&
+            searcherDestToRoute <= CORRIDOR_KM &&
+            isSameDirection;
+
+          // ── Fallback: original endpoint proximity (3 km) ──────────────────────
           pickupDist = haversineDistanceKm(pickupLat, pickupLng, ride.pickupLat, ride.pickupLng);
-          if (pickupDist > radiusKm) isGeoMatch = false;
-        }
-
-        if (destLat != null && destLng != null && ride.destLat != null && ride.destLng != null) {
           destDist = haversineDistanceKm(destLat, destLng, ride.destLat, ride.destLng);
-          if (destDist > radiusKm) isGeoMatch = false;
+          const isEndpointMatch = pickupDist <= radiusKm && destDist <= radiusKm;
+
+          isGeoMatch = isCorridorMatch || isEndpointMatch;
+        } else if (hasGeoSearch && !rideHasCoords) {
+          isGeoMatch = false;
         }
 
         let isTextMatch = true;
@@ -190,6 +278,7 @@ class RideService {
 
     return matchedRides;
   }
+
 
   async updateRideStatus(rideId, driverId, newStatus) {
     const ride = await rideRepository.findById(rideId);

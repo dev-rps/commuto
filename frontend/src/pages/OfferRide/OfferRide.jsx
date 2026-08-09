@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, Clock, Users, Wallet, Car, Navigation, ChevronRight, MapPin, ArrowRight, Sparkles } from 'lucide-react';
+import { Calendar, Clock, Users, Wallet, Car, Navigation, ChevronRight, MapPin, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { getMyVehicles, publishRide, createRecurringRide } from '../../lib/api';
 import { FieldError, LocationAutocomplete } from '../../components';
 import { SkeletonCard } from '../../components/Skeleton';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
+import { fetchOsrmRoute } from '../../lib/useRouteDistance';
 
 const STEPS = ['Vehicle', 'Route', 'Details'];
 
@@ -20,6 +21,8 @@ export default function OfferRide() {
   const [step, setStep]           = useState(0);
   const [errors, setErrors]       = useState({});
   const [isRecurring, setIsRecurring] = useState(false);
+  const [fetchingDistance, setFetchingDistance] = useState(false);
+  const distanceFetchRef = useRef(null);
 
   const routeState = location.state || {};
 
@@ -49,21 +52,49 @@ export default function OfferRide() {
 
   const handleSelectLocation = ({ name, address, lat, lng }) => {
     if (name === 'pickupLoc') {
-      setForm((prev) => ({
-        ...prev,
-        pickupLoc: address,
-        pickupLat: lat || prev.pickupLat,
-        pickupLng: lng || prev.pickupLng,
-      }));
+      setForm((prev) => {
+        const newPickupLat = lat || prev.pickupLat;
+        const newPickupLng = lng || prev.pickupLng;
+        // Auto-fetch distance if destination already selected
+        if (prev.destLat && prev.destLng) {
+          autoFetchDistance(newPickupLat, newPickupLng, prev.destLat, prev.destLng);
+        }
+        return { ...prev, pickupLoc: address, pickupLat: newPickupLat, pickupLng: newPickupLng };
+      });
       setErrors((prev) => ({ ...prev, pickupLoc: undefined }));
     } else if (name === 'destination') {
-      setForm((prev) => ({
-        ...prev,
-        destination: address,
-        destLat: lat || prev.destLat,
-        destLng: lng || prev.destLng,
-      }));
+      setForm((prev) => {
+        const newDestLat = lat || prev.destLat;
+        const newDestLng = lng || prev.destLng;
+        // Auto-fetch distance if pickup already selected
+        if (prev.pickupLat && prev.pickupLng) {
+          autoFetchDistance(prev.pickupLat, prev.pickupLng, newDestLat, newDestLng);
+        }
+        return { ...prev, destination: address, destLat: newDestLat, destLng: newDestLng };
+      });
       setErrors((prev) => ({ ...prev, destination: undefined }));
+    }
+  };
+
+  // Auto-fetch real road distance whenever both pickup & destination coords are set
+  const autoFetchDistance = async (pickupLat, pickupLng, destLat, destLng) => {
+    if (!pickupLat || !pickupLng || !destLat || !destLng) return;
+    // Cancel previous in-flight fetch
+    if (distanceFetchRef.current) distanceFetchRef.current.abort();
+    const controller = new AbortController();
+    distanceFetchRef.current = controller;
+
+    setFetchingDistance(true);
+    try {
+      const { distanceKm } = await fetchOsrmRoute(pickupLat, pickupLng, destLat, destLng, controller.signal);
+      setForm((prev) => ({ ...prev, distanceKm: distanceKm.toFixed(1) }));
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        // Silently fail — user can enter manually
+        console.warn('Could not auto-fetch road distance:', err.message);
+      }
+    } finally {
+      if (!controller.signal.aborted) setFetchingDistance(false);
     }
   };
 
@@ -323,11 +354,21 @@ export default function OfferRide() {
                   <div>
                     <label className="label">Distance (km)</label>
                     <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+                      {fetchingDistance ? (
+                        <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary animate-spin pointer-events-none" />
+                      ) : (
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+                      )}
                       <input name="distanceKm" type="number" min="0" step="0.1"
-                        value={form.distanceKm} onChange={handleChange} placeholder="16.5"
+                        value={form.distanceKm} onChange={handleChange}
+                        placeholder={fetchingDistance ? 'Fetching…' : '16.5'}
                         className="input pl-10" />
                     </div>
+                    {!fetchingDistance && form.distanceKm && (
+                      <p className="text-[11px] text-accent-600 mt-1 flex items-center gap-1">
+                        <span>🛣</span> Road distance (auto-fetched)
+                      </p>
+                    )}
                   </div>
                 </div>
                 {form.farePerSeat && form.availableSeats && (
