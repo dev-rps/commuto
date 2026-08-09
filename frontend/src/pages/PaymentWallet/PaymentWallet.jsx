@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Wallet, TrendingUp, Plus, Clock, ArrowDownLeft, ArrowUpRight, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
-import { getWalletTransactions, rechargeWallet, getMyBookings, initiatePayment } from '../../lib/api';
+import { getWalletTransactions, rechargeWallet, getMyBookings, initiatePayment, verifyPayment } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { formatINR, formatDateTime } from '../../lib/utils';
@@ -85,22 +85,92 @@ export default function PaymentWallet() {
     return () => window.removeEventListener('commuto:update', handleUpdate);
   }, [pendingBookingId]);
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handlePayBooking = async () => {
     if (!pendingBooking) return;
     setPayingBooking(true);
     try {
-      await initiatePayment(pendingBooking.id, paymentMethod);
-      setBookingPaid(true);
-      toast.success('Payment completed successfully!');
-      // Refresh wallet balance if wallet payment
-      if (paymentMethod === 'WALLET') {
-        const newBalance = balance - (pendingBooking.totalFare || 0);
-        setBalance(Math.max(0, newBalance));
-        login({ ...user, walletBalance: Math.max(0, newBalance) }, localStorage.getItem('accessToken'));
+      const response = await initiatePayment(pendingBooking.id, paymentMethod);
+
+      // If Razorpay details are returned (CARD / UPI)
+      if (response.razorpay) {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) {
+          toast.error('Failed to load Razorpay SDK. Please check your internet connection.');
+          setPayingBooking(false);
+          return;
+        }
+
+        const options = {
+          key: response.razorpay.keyId,
+          amount: response.razorpay.amount,
+          currency: response.razorpay.currency,
+          name: 'Commuto Carpooling',
+          description: `Ride Payment for Booking #${pendingBooking.id.slice(0, 8)}`,
+          order_id: response.razorpay.orderId,
+          handler: async function (paymentResponse) {
+            setPayingBooking(true);
+            try {
+              const verifyResponse = await verifyPayment(pendingBooking.id, {
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+              });
+              setBookingPaid(true);
+              toast.success('Payment verified & completed successfully! 🎉');
+
+              // Dispatch live update event
+              window.dispatchEvent(new CustomEvent('commuto:update', { detail: verifyResponse }));
+            } catch (verifyErr) {
+              toast.error(verifyErr.response?.data?.error || verifyErr.message || 'Payment verification failed');
+            } finally {
+              setPayingBooking(false);
+            }
+          },
+          prefill: {
+            name: user?.name || '',
+            email: user?.email || '',
+            contact: user?.phone || '',
+          },
+          theme: {
+            color: '#2563eb', // Matches primary blue theme
+          },
+          modal: {
+            ondismiss: function () {
+              setPayingBooking(false);
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } else {
+        // WALLET or CASH payment path
+        setBookingPaid(true);
+        toast.success(response.message || 'Payment completed successfully!');
+        if (paymentMethod === 'WALLET') {
+          const newBalance = balance - (pendingBooking.totalFare || 0);
+          setBalance(Math.max(0, newBalance));
+          login({ ...user, walletBalance: Math.max(0, newBalance) }, localStorage.getItem('accessToken'));
+        }
+        setPayingBooking(false);
       }
     } catch (err) {
       toast.error(err.response?.data?.error || err.message || 'Payment failed');
-    } finally {
       setPayingBooking(false);
     }
   };
