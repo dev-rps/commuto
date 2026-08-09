@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, User, Building2, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
 import { login as apiLogin, signup as apiSignup, getOrganizations } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
@@ -48,7 +48,8 @@ function PasswordStrength({ password }) {
 }
 
 export default function Login() {
-  const [mode, setMode] = useState('login');
+  const location = useLocation();
+  const [mode, setMode] = useState(location.state?.mode || 'login');
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [errors, setErrors] = useState({});
