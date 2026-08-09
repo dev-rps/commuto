@@ -377,8 +377,14 @@ export default function LiveTracking() {
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle className="w-8 h-8" />
                 </div>
-                <h2 className="text-2xl font-bold text-neutral-900 mb-2">Transaction Successful!</h2>
-                <p className="text-neutral-500 mb-6">Your ride has been fully completed.</p>
+                <h2 className="text-2xl font-bold text-neutral-900 mb-2">
+                  {isDriver ? 'Earnings Confirmed!' : 'Payment Successful!'}
+                </h2>
+                <p className="text-neutral-500 mb-6">
+                  {isDriver
+                    ? 'Your ride is complete. Non-wallet earnings will be settled separately.'
+                    : 'Your ride payment has been completed successfully.'}
+                </p>
                 <button onClick={() => navigate('/trips')} className="btn-primary w-full">
                   Back to My Trips
                 </button>
@@ -387,12 +393,12 @@ export default function LiveTracking() {
               <div>
                 <h2 className="text-xl font-bold text-neutral-900 mb-1">Ride Completed</h2>
                 <p className="text-sm text-neutral-500 mb-6">
-                  {isDriver ? 'Summary of your earnings' : 'Please complete your payment'}
+                  {isDriver ? 'How would you like to receive your earnings?' : 'Please complete your payment'}
                 </p>
 
                 <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 mb-6">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-neutral-600">{isDriver ? 'Total Collected' : 'Fare Amount'}</span>
+                    <span className="text-neutral-600">{isDriver ? 'Total Earned' : 'Fare Amount'}</span>
                     <span className="text-2xl font-bold text-neutral-900">₹{amountDue}</span>
                   </div>
                   {!isDriver && myBooking && (
@@ -411,8 +417,8 @@ export default function LiveTracking() {
                         key={method}
                         onClick={() => setPaymentMethod(method)}
                         className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
-                          paymentMethod === method 
-                            ? 'border-primary bg-primary-50/50 shadow-sm' 
+                          paymentMethod === method
+                            ? 'border-primary bg-primary-50/50 shadow-sm'
                             : 'border-neutral-200 hover:border-primary-200'
                         }`}
                       >
@@ -435,13 +441,18 @@ export default function LiveTracking() {
                         key={method}
                         onClick={() => setPaymentMethod(method)}
                         className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
-                          paymentMethod === method 
-                            ? 'border-primary bg-primary-50/50 shadow-sm' 
+                          paymentMethod === method
+                            ? 'border-primary bg-primary-50/50 shadow-sm'
                             : 'border-neutral-200 hover:border-primary-200'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <span className="font-medium text-neutral-900">{method === 'WALLET' ? 'Commuto Wallet' : 'Linked Bank Account'}</span>
+                          {method === 'WALLET' && (
+                            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                              Pending rider payment
+                            </span>
+                          )}
                         </div>
                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                           paymentMethod === method ? 'border-primary' : 'border-neutral-300'
@@ -450,6 +461,12 @@ export default function LiveTracking() {
                         </div>
                       </button>
                     ))}
+                    {paymentMethod === 'WALLET' && (
+                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-700 flex items-start gap-2">
+                        <Clock className="w-4 h-4 shrink-0 mt-0.5" />
+                        <span>Your wallet will be credited once the rider completes payment. The booking status will show as <strong>Payment Pending</strong> until then.</span>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -459,15 +476,23 @@ export default function LiveTracking() {
                     setPaying(true);
                     try {
                       if (!isDriver) {
-                        if (!myBooking?.id) throw new Error("Booking not found");
+                        if (!myBooking?.id) throw new Error('Booking not found');
                         await initiatePayment(myBooking.id, paymentMethod);
+                        setPaymentSuccess(true);
                       } else {
-                        // Mock receiving for driver
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        // Driver confirming how to receive
+                        await new Promise(resolve => setTimeout(resolve, 800));
+                        if (paymentMethod === 'WALLET') {
+                          // Earnings are pending — rider must pay first
+                          toast.success('Preference saved! Earnings will be credited once riders pay.');
+                          setShowPaymentModal(false);
+                          navigate('/trips');
+                        } else {
+                          setPaymentSuccess(true);
+                        }
                       }
-                      setPaymentSuccess(true);
                     } catch (err) {
-                      toast.error(err.response?.data?.error || err.message || 'Payment failed');
+                      toast.error(err.response?.data?.error || err.message || 'Action failed');
                     } finally {
                       setPaying(false);
                     }
@@ -477,12 +502,14 @@ export default function LiveTracking() {
                   {paying ? (
                     <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                   ) : isDriver ? (
-                    `Confirm & Receive ₹${amountDue}`
+                    paymentMethod === 'WALLET'
+                      ? `Confirm — Awaiting Rider Payment`
+                      : `Confirm & Receive ₹${amountDue}`
                   ) : (
                     `Pay ₹${amountDue} Now`
                   )}
                 </button>
-                <button 
+                <button
                   onClick={() => setShowPaymentModal(false)}
                   className="btn-ghost w-full mt-3 text-neutral-500"
                 >

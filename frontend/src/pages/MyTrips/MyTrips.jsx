@@ -195,7 +195,10 @@ export default function MyTrips() {
                         {cancelling === item.id ? 'Cancelling...' : 'Cancel'}
                       </button>
                     )}
-                    {!isTrip && (rideStatus === 'PUBLISHED' || rideStatus === 'AT_PICKUP') && (item.bookings?.filter(b => b.status !== 'CANCELLED').length || 0) === 0 && (
+                    {!isTrip && (rideStatus === 'PUBLISHED' || rideStatus === 'AT_PICKUP') && (
+                      // Show cancel if no active bookings (or if booking data not loaded in list view)
+                      !item.bookings || item.bookings.filter(b => b.status !== 'CANCELLED').length === 0
+                    ) && (
                       <button onClick={() => handleCancelRide(item.id)} disabled={cancellingRide === item.id}
                         className="btn-secondary text-error border-error/30 hover:bg-error/5">
                         <X className="w-4 h-4" />

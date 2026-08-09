@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Wallet, TrendingUp, Plus, Clock, ArrowDownLeft, ArrowUpRight, CheckCircle } from 'lucide-react';
-import { getWalletTransactions, rechargeWallet } from '../../lib/api';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Wallet, TrendingUp, Plus, Clock, ArrowDownLeft, ArrowUpRight, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { getWalletTransactions, rechargeWallet, getMyBookings, initiatePayment } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { formatINR, formatDateTime } from '../../lib/utils';
@@ -17,11 +18,22 @@ const TXN_ICONS = {
 export default function PaymentWallet() {
   const { user, login }  = useAuth();
   const toast            = useToast();
+  const location         = useLocation();
+  const navigate         = useNavigate();
+  const pendingBookingId = location.state?.bookingId || null;
+
   const [txns, setTxns]  = useState([]);
   const [loading, setLoading] = useState(true);
   const [amount, setAmount]   = useState('');
   const [adding, setAdding]   = useState(false);
   const [balance, setBalance] = useState(user?.walletBalance ?? 0);
+
+  // Pending booking payment state
+  const [pendingBooking, setPendingBooking] = useState(null);
+  const [loadingBooking, setLoadingBooking] = useState(!!pendingBookingId);
+  const [payingBooking, setPayingBooking]   = useState(false);
+  const [paymentMethod, setPaymentMethod]   = useState('WALLET');
+  const [bookingPaid, setBookingPaid]       = useState(false);
 
   useEffect(() => {
     getWalletTransactions()
@@ -31,6 +43,38 @@ export default function PaymentWallet() {
       .catch(() => toast.error('Failed to load transactions'))
       .finally(() => setLoading(false));
   }, []);
+
+  // Load pending booking if bookingId is passed
+  useEffect(() => {
+    if (!pendingBookingId) return;
+    getMyBookings()
+      .then((bookings) => {
+        const booking = (bookings || []).find(b => b.id === pendingBookingId);
+        setPendingBooking(booking || null);
+      })
+      .catch(() => setPendingBooking(null))
+      .finally(() => setLoadingBooking(false));
+  }, [pendingBookingId]);
+
+  const handlePayBooking = async () => {
+    if (!pendingBooking) return;
+    setPayingBooking(true);
+    try {
+      await initiatePayment(pendingBooking.id, paymentMethod);
+      setBookingPaid(true);
+      toast.success('Payment completed successfully!');
+      // Refresh wallet balance if wallet payment
+      if (paymentMethod === 'WALLET') {
+        const newBalance = balance - (pendingBooking.totalFare || 0);
+        setBalance(Math.max(0, newBalance));
+        login({ ...user, walletBalance: Math.max(0, newBalance) }, localStorage.getItem('accessToken'));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || err.message || 'Payment failed');
+    } finally {
+      setPayingBooking(false);
+    }
+  };
 
   const handleRecharge = async () => {
     const val = Number(amount);
@@ -57,6 +101,89 @@ export default function PaymentWallet() {
         <h1 className="text-2xl font-bold text-neutral-900">Payment & Wallet</h1>
         <p className="section-desc">Manage your balance and transactions</p>
       </div>
+
+      {/* Pending Booking Payment Panel */}
+      {pendingBookingId && (
+        <div className="card p-5 border-2 border-amber-300 bg-amber-50/40">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertCircle className="w-5 h-5 text-amber-600" />
+            <h3 className="font-bold text-neutral-900">Complete Pending Payment</h3>
+          </div>
+          {loadingBooking ? (
+            <div className="flex items-center gap-2 text-sm text-neutral-500 py-2">
+              <span className="w-4 h-4 rounded-full border-2 border-neutral-300 border-t-neutral-600 animate-spin" />
+              Loading booking details...
+            </div>
+          ) : bookingPaid ? (
+            <div className="flex items-center gap-3 text-green-700 bg-green-50 border border-green-200 rounded-xl p-4">
+              <CheckCircle className="w-5 h-5 shrink-0" />
+              <div>
+                <p className="font-semibold">Payment Successful!</p>
+                <p className="text-sm text-green-600">Your booking has been paid.</p>
+              </div>
+              <button onClick={() => navigate('/trips')} className="ml-auto btn-secondary text-xs">
+                <ArrowLeft className="w-3 h-3" /> My Trips
+              </button>
+            </div>
+          ) : pendingBooking ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between bg-white rounded-xl p-4 border border-amber-200">
+                <div>
+                  <p className="text-sm text-neutral-500">Fare Amount</p>
+                  <p className="text-2xl font-bold text-neutral-900">{formatINR(pendingBooking.totalFare)}</p>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    {pendingBooking.ride?.pickupLoc} → {pendingBooking.ride?.destination}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-neutral-500">Seats</p>
+                  <p className="font-bold text-neutral-900">{pendingBooking.seatsBooked}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-neutral-900">Select Payment Method</p>
+                {['WALLET', 'UPI', 'CARD', 'CASH'].map((method) => (
+                  <button
+                    key={method}
+                    onClick={() => setPaymentMethod(method)}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl border text-sm transition-all ${
+                      paymentMethod === method
+                        ? 'border-primary bg-primary-50/50 shadow-sm'
+                        : 'border-neutral-200 hover:border-primary-200 bg-white'
+                    }`}
+                  >
+                    <span className="font-medium text-neutral-900">{method === 'WALLET' ? `Commuto Wallet (${formatINR(balance)})` : method}</span>
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                      paymentMethod === method ? 'border-primary' : 'border-neutral-300'
+                    }`}>
+                      {paymentMethod === method && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {paymentMethod === 'WALLET' && balance < (pendingBooking.totalFare || 0) && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  ⚠️ Insufficient wallet balance. Please add money below or choose another payment method.
+                </p>
+              )}
+              <button
+                onClick={handlePayBooking}
+                disabled={payingBooking || (paymentMethod === 'WALLET' && balance < (pendingBooking.totalFare || 0))}
+                className="btn-primary w-full py-3 text-base"
+              >
+                {payingBooking
+                  ? <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  : `Pay ${formatINR(pendingBooking.totalFare)} Now`}
+              </button>
+              <button onClick={() => navigate('/trips')} className="btn-ghost w-full text-neutral-500 text-sm">
+                <ArrowLeft className="w-4 h-4" /> Back to My Trips
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-neutral-500">Could not load booking details. <button onClick={() => navigate('/trips')} className="text-primary underline">Go back to trips</button></p>
+          )}
+        </div>
+      )}
 
       {/* Premium wallet card */}
       <div

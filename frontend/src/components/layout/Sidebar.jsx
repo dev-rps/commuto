@@ -22,14 +22,7 @@ const adminNav = [
   { to: '/admin-dashboard',icon: Building2,       label: 'Company Admin Panel' },
   { to: '/leaderboard',    icon: Trophy,          label: 'Eco Leaderboard' },
   { to: '/reports',        icon: BarChart3,       label: 'Fleet & Fuel Analytics' },
-  { to: '/dashboard',      icon: LayoutDashboard, label: 'Commuter View' },
-  { to: '/rides/find',     icon: Search,          label: 'Find a Ride' },
-  { to: '/rides/offer',    icon: Navigation,      label: 'Offer a Ride' },
-  { to: '/trips',          icon: Calendar,        label: 'My Trips' },
-  { to: '/chat/ride-004',  icon: MessageSquare,   label: 'Chat', isChat: true },
-  { to: '/vehicles',       icon: Car,             label: 'My Vehicle' },
   { to: '/wallet',         icon: Wallet,          label: 'Wallet' },
-  { to: '/places',         icon: MapPin,          label: 'Saved Places' },
   { to: '/settings',       icon: Settings,        label: 'Settings' },
 ];
 
