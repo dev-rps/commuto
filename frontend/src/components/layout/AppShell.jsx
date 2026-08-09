@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
+import { useToast } from '../../context/ToastContext';
 import {
   LayoutDashboard, Search, Navigation, Calendar, Wallet, Settings,
 } from 'lucide-react';
@@ -33,6 +36,41 @@ export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, setUser } = useAuth();
+  const { socket, events } = useSocket();
+  const toast = useToast();
+
+  useEffect(() => {
+    if (!socket || !user) return;
+
+    const userEvent = events.notificationNew(user.id);
+
+    const handleNotification = (data) => {
+      console.log('[AppShell] Global socket notification:', data);
+
+      // Show toast if title/body exists
+      if (data.title && data.body) {
+        toast.success(`${data.title}: ${data.body}`);
+      }
+
+      // Live update wallet balance in AuthContext
+      if (data.walletBalance !== undefined) {
+        setUser((prev) => {
+          if (!prev) return prev;
+          return { ...prev, walletBalance: Number(data.walletBalance) };
+        });
+      }
+
+      // Dispatch window event so other pages refresh live
+      window.dispatchEvent(new CustomEvent('commuto:update', { detail: data }));
+    };
+
+    socket.on(userEvent, handleNotification);
+
+    return () => {
+      socket.off(userEvent, handleNotification);
+    };
+  }, [socket, user, events, setUser, toast]);
 
   const title = pageTitles[location.pathname]
     || (location.pathname.startsWith('/tracking') ? 'Live Tracking'

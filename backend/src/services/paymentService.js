@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const prisma = require("../lib/prismaClient");
 const bookingRepository = require("../repositories/bookingRepository");
 const paymentRepository = require("../repositories/paymentRepository");
+const { getIO, SOCKET_EVENTS } = require("../sockets");
 
 /**
  * Lazily initialize Razorpay — only when CARD/UPI is used.
@@ -70,7 +71,7 @@ class PaymentService {
 
     // ── CASH ──────────────────────────────────────────────────────────
     if (method === "CASH") {
-      return prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx) => {
         const payment = await tx.payment.create({
           data: {
             bookingId,
@@ -87,11 +88,36 @@ class PaymentService {
 
         return { payment, message: "Cash payment recorded successfully" };
       });
+
+      // Emit real-time notification
+      try {
+        const io = getIO();
+        const passengerId = booking.passengerId;
+        const driverId = booking.ride.driver.id;
+
+        io.to(`user:${passengerId}`).emit(SOCKET_EVENTS.notificationNew(passengerId), {
+          type: "PAYMENT_COMPLETED",
+          title: "Payment Confirmed",
+          body: `Cash payment of ₹${amount} for your ride to ${booking.ride.destination} has been confirmed.`,
+          bookingId,
+        });
+
+        io.to(`user:${driverId}`).emit(SOCKET_EVENTS.notificationNew(driverId), {
+          type: "RIDE_EARNING",
+          title: "Cash Payment Recorded",
+          body: `Cash payment of ₹${amount} from ${booking.passenger.name} has been recorded.`,
+          bookingId,
+        });
+      } catch (err) {
+        console.warn("Cash payment socket notify error:", err.message);
+      }
+
+      return result;
     }
 
     // ── WALLET ────────────────────────────────────────────────────────
     if (method === "WALLET") {
-      return prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx) => {
         // Fetch current wallet balance inside transaction
         const user = await tx.user.findUnique({
           where: { id: userId },
@@ -168,6 +194,39 @@ class PaymentService {
           message: "Wallet payment completed successfully",
         };
       });
+
+      // Emit real-time notification
+      try {
+        const io = getIO();
+        const passengerId = booking.passengerId;
+        const driverId = booking.ride.driver.id;
+
+        const driverUser = await prisma.user.findUnique({
+          where: { id: driverId },
+          select: { walletBalance: true },
+        });
+        const driverBalance = driverUser ? Number(driverUser.walletBalance) : 0;
+
+        io.to(`user:${passengerId}`).emit(SOCKET_EVENTS.notificationNew(passengerId), {
+          type: "PAYMENT_COMPLETED",
+          title: "Payment Successful",
+          body: `Payment of ₹${amount} for your ride to ${booking.ride.destination} was successful.`,
+          bookingId,
+          walletBalance: result.walletBalance,
+        });
+
+        io.to(`user:${driverId}`).emit(SOCKET_EVENTS.notificationNew(driverId), {
+          type: "RIDE_EARNING",
+          title: "Payment Received",
+          body: `You received ₹${amount} from ${booking.passenger.name} for ride to ${booking.ride.destination}.`,
+          bookingId,
+          walletBalance: driverBalance,
+        });
+      } catch (err) {
+        console.warn("Wallet payment socket notify error:", err.message);
+      }
+
+      return result;
     }
 
     // ── CARD / UPI (Razorpay) ─────────────────────────────────────────
@@ -266,7 +325,7 @@ class PaymentService {
     }
 
     // Signature valid — update payment and booking in a transaction
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const updatedPayment = await tx.payment.update({
         where: { id: payment.id },
         data: {
@@ -306,6 +365,46 @@ class PaymentService {
         message: "Payment verified and booking confirmed",
       };
     });
+
+    // Emit real-time notification
+    try {
+      const io = getIO();
+      const passengerId = booking.passengerId;
+      const driverId = booking.ride.driver.id;
+      const amount = Number(payment.amount);
+
+      const passengerUser = await prisma.user.findUnique({
+        where: { id: passengerId },
+        select: { walletBalance: true },
+      });
+      const passengerBalance = passengerUser ? Number(passengerUser.walletBalance) : 0;
+
+      const driverUser = await prisma.user.findUnique({
+        where: { id: driverId },
+        select: { walletBalance: true },
+      });
+      const driverBalance = driverUser ? Number(driverUser.walletBalance) : 0;
+
+      io.to(`user:${passengerId}`).emit(SOCKET_EVENTS.notificationNew(passengerId), {
+        type: "PAYMENT_COMPLETED",
+        title: "Payment Successful",
+        body: `Payment of ₹${amount} for your ride to ${booking.ride.destination} was successful.`,
+        bookingId,
+        walletBalance: passengerBalance,
+      });
+
+      io.to(`user:${driverId}`).emit(SOCKET_EVENTS.notificationNew(driverId), {
+        type: "RIDE_EARNING",
+        title: "Payment Received",
+        body: `You received ₹${amount} from ${booking.passenger.name} for ride to ${booking.ride.destination}.`,
+        bookingId,
+        walletBalance: driverBalance,
+      });
+    } catch (err) {
+      console.warn("Razorpay verify socket notify error:", err.message);
+    }
+
+    return result;
   }
 }
 

@@ -67,6 +67,28 @@ class ChatService {
         message: chatMessage.message,
         sentAt: chatMessage.sentAt,
       });
+
+      // Emit notification:new to other participants
+      const activeBookings = await prisma.booking.findMany({
+        where: {
+          rideId,
+          status: { in: ["BOOKED", "PAYMENT_COMPLETED"] },
+        },
+        select: { passengerId: true },
+      });
+
+      const recipients = new Set(activeBookings.map((b) => b.passengerId));
+      recipients.add(ride.driverId);
+      recipients.delete(senderId); // Don't notify the sender
+
+      recipients.forEach((userId) => {
+        io.to(`user:${userId}`).emit(SOCKET_EVENTS.notificationNew(userId), {
+          type: "CHAT_MESSAGE",
+          title: `New Message from ${chatMessage.sender.name}`,
+          body: messageText,
+          rideId,
+        });
+      });
     } catch (socketErr) {
       console.warn("Chat socket emission warning:", socketErr.message);
     }

@@ -53,6 +53,16 @@ export function Sidebar({ open, onClose }) {
     navigate('/login');
   };
 
+  const handleBrandClick = () => {
+    const homeDestination = user?.role === 'SUPER_ADMIN' 
+      ? '/superadmin' 
+      : user?.role === 'COMPANY_ADMIN' 
+      ? '/admin-dashboard' 
+      : '/dashboard';
+    navigate(homeDestination);
+    onClose?.();
+  };
+
   return (
     <>
       {/* Mobile overlay */}
@@ -73,7 +83,10 @@ export function Sidebar({ open, onClose }) {
         style={{ boxShadow: open ? 'var(--shadow-xl)' : 'none' }}
       >
         {/* Brand */}
-        <div className="flex items-center gap-3 px-5 h-16 border-b border-neutral-200/80 shrink-0">
+        <div
+          onClick={handleBrandClick}
+          className="flex items-center gap-3 px-5 h-16 border-b border-neutral-200/80 shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+        >
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: 'var(--gradient-primary)', boxShadow: '0 2px 8px rgb(37 99 235 / 0.35)' }}

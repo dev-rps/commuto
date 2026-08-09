@@ -54,6 +54,7 @@ class BookingRepository {
           },
         },
         payment: true,
+        reviews: true,
       },
     });
   }

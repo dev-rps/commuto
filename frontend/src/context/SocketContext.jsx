@@ -1,7 +1,9 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
+import { useAuth } from './AuthContext';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || `http://${window.location.hostname}:4000`;
+const rawApiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:4000/api`;
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || rawApiUrl.replace(/\/api$/, '').replace(/\/$/, '');
 
 export const SOCKET_EVENTS = {
   rideLocation: (rideId) => `ride:location:${rideId}`,
@@ -14,28 +16,48 @@ export const SOCKET_EVENTS = {
 const SocketContext = createContext(null);
 
 export function SocketProvider({ children }) {
-  const socketRef = useRef(null);
+  const { user } = useAuth();
+  const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    if (!user) {
+      setSocket(null);
+      setIsConnected(false);
+      return;
+    }
+
     const token = localStorage.getItem('accessToken');
     if (!token) return;
-    // In mock mode we don't actually connect — wiring the real backend
-    // is just removing this guard.
     if (import.meta.env.VITE_USE_MOCKS === 'true') return;
 
-    const socket = io(SOCKET_URL, { auth: { token }, transports: ['websocket'] });
-    socketRef.current = socket;
-    socket.on('connect', () => setIsConnected(true));
-    socket.on('disconnect', () => setIsConnected(false));
-    return () => { socket.disconnect(); socketRef.current = null; };
-  }, []);
+    console.log('[Socket] Connecting to:', SOCKET_URL);
+    const socketInstance = io(SOCKET_URL, { auth: { token }, transports: ['websocket'] });
+    setSocket(socketInstance);
 
-  const joinRideRoom = (rideId) => socketRef.current?.emit('join:ride', rideId);
-  const leaveRideRoom = (rideId) => socketRef.current?.emit('leave:ride', rideId);
+    socketInstance.on('connect', () => {
+      console.log('[Socket] Connected successfully!');
+      setIsConnected(true);
+    });
+    
+    socketInstance.on('disconnect', () => {
+      console.log('[Socket] Disconnected.');
+      setIsConnected(false);
+    });
+
+    return () => {
+      console.log('[Socket] Cleaning up socket connection...');
+      socketInstance.disconnect();
+      setSocket(null);
+      setIsConnected(false);
+    };
+  }, [user?.id]);
+
+  const joinRideRoom = (rideId) => socket?.emit('join:ride', rideId);
+  const leaveRideRoom = (rideId) => socket?.emit('leave:ride', rideId);
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, isConnected, joinRideRoom, leaveRideRoom, events: SOCKET_EVENTS }}>
+    <SocketContext.Provider value={{ socket, isConnected, joinRideRoom, leaveRideRoom, events: SOCKET_EVENTS }}>
       {children}
     </SocketContext.Provider>
   );

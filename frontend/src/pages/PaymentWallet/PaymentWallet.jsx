@@ -36,25 +36,53 @@ export default function PaymentWallet() {
   const [paymentMethod, setPaymentMethod]   = useState('WALLET');
   const [bookingPaid, setBookingPaid]       = useState(false);
 
+  // Sync local balance state with the live Auth balance
   useEffect(() => {
+    if (user?.walletBalance !== undefined) {
+      setBalance(Number(user.walletBalance));
+    }
+  }, [user?.walletBalance]);
+
+  const loadTransactions = () => {
     getWalletTransactions()
       .then((res) => {
         setTxns(Array.isArray(res) ? res : []);
       })
       .catch(() => toast.error('Failed to load transactions'))
       .finally(() => setLoading(false));
-  }, []);
+  };
 
-  // Load pending booking if bookingId is passed
-  useEffect(() => {
+  const loadPendingBooking = () => {
     if (!pendingBookingId) return;
     getMyBookings()
       .then((bookings) => {
         const booking = (bookings || []).find(b => b.id === pendingBookingId);
         setPendingBooking(booking || null);
+        if (booking && booking.status === 'PAYMENT_COMPLETED') {
+          setBookingPaid(true);
+        }
       })
       .catch(() => setPendingBooking(null))
       .finally(() => setLoadingBooking(false));
+  };
+
+  useEffect(() => {
+    loadTransactions();
+  }, []);
+
+  useEffect(() => {
+    loadPendingBooking();
+  }, [pendingBookingId]);
+
+  // Live socket updates listener
+  useEffect(() => {
+    const handleUpdate = () => {
+      console.log('[PaymentWallet] Live update triggered from socket event');
+      loadTransactions();
+      loadPendingBooking();
+    };
+    window.addEventListener('commuto:update', handleUpdate);
+    return () => window.removeEventListener('commuto:update', handleUpdate);
   }, [pendingBookingId]);
 
   const handlePayBooking = async () => {

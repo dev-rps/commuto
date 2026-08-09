@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Navigation, X, ArrowRight, MessageSquare, Filter } from 'lucide-react';
+import { Calendar, Navigation, X, ArrowRight, MessageSquare, Filter, Star } from 'lucide-react';
 import { getMyBookings, getMyRides, cancelBooking, updateRideStatus } from '../../lib/api';
-import { StatusBadge, EmptyState } from '../../components';
+import { StatusBadge, EmptyState, ReviewModal } from '../../components';
 import { SkeletonCard } from '../../components/Skeleton';
 import { formatDateTime, formatINR, timeUntil } from '../../lib/utils';
 import { useToast } from '../../context/ToastContext';
@@ -19,15 +19,28 @@ export default function MyTrips() {
   const [filter, setFilter]     = useState('All');
   const [cancelling, setCancelling] = useState(null);
   const [cancellingRide, setCancellingRide] = useState(null);
+  const [reviewingBooking, setReviewingBooking] = useState(null);
+
+  const load = async () => {
+    try {
+      const [b, r] = await Promise.all([getMyBookings(), getMyRides()]);
+      setTrips(b); setOffered(r);
+    } catch (err) {
+      console.error('Failed to load trips:', err);
+    } finally { setLoading(false); }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [b, r] = await Promise.all([getMyBookings(), getMyRides()]);
-        setTrips(b); setOffered(r);
-      } finally { setLoading(false); }
-    };
     load();
+  }, []);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      console.log('[MyTrips] Live update triggered from socket event');
+      load();
+    };
+    window.addEventListener('commuto:update', handleUpdate);
+    return () => window.removeEventListener('commuto:update', handleUpdate);
   }, []);
 
   const handleCancel = async (bookingId) => {
@@ -210,6 +223,20 @@ export default function MyTrips() {
                         Pay Now <ArrowRight className="w-4 h-4" />
                       </button>
                     )}
+                    {isTrip && (status === 'PAYMENT_COMPLETED' || rideStatus === 'COMPLETED') && (
+                      item.reviews && item.reviews.length > 0 ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 bg-neutral-100 px-3 py-1.5 rounded-xl border border-neutral-200">
+                          Reviewed ✓
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setReviewingBooking(item)}
+                          className="btn-accent border border-amber-300 bg-amber-50 hover:bg-amber-100 hover:border-amber-400 text-neutral-800"
+                        >
+                          <Star className="w-4 h-4 text-amber-500 fill-amber-500" /> Review Driver
+                        </button>
+                      )
+                    )}
                     {rideStatus !== 'COMPLETED' && rideStatus !== 'CANCELLED' && (
                       <button onClick={() => navigate(`/chat/${isTrip ? item.rideId : item.id}`)} className="btn-ghost">
                         <MessageSquare className="w-4 h-4" /> Chat
@@ -221,6 +248,19 @@ export default function MyTrips() {
             );
           })}
         </div>
+      )}
+
+      {reviewingBooking && (
+        <ReviewModal
+          rideId={reviewingBooking.rideId}
+          bookingId={reviewingBooking.id}
+          revieweeId={reviewingBooking.ride?.driverId || reviewingBooking.ride?.driver?.id}
+          revieweeName={reviewingBooking.ride?.driver?.name}
+          onClose={() => setReviewingBooking(null)}
+          onSuccess={() => {
+            load();
+          }}
+        />
       )}
     </div>
   );

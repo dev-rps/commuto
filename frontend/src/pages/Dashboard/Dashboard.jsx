@@ -23,18 +23,30 @@ export default function Dashboard() {
   const isAdmin = user?.role === 'COMPANY_ADMIN';
   const firstName = user?.name?.split(' ')[0] || 'there';
 
+  const load = async () => {
+    try {
+      const [b, r] = await Promise.all([
+        getMyBookings(),
+        isAdmin ? getReportSummary() : Promise.resolve(null),
+      ]);
+      setBookings(b.slice(0, 4));
+      if (r) setReport(r);
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+    } finally { setLoading(false); }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [b, r] = await Promise.all([
-          getMyBookings(),
-          isAdmin ? getReportSummary() : Promise.resolve(null),
-        ]);
-        setBookings(b.slice(0, 4));
-        if (r) setReport(r);
-      } finally { setLoading(false); }
-    };
     load();
+  }, [isAdmin]);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      console.log('[Dashboard] Live update triggered from socket event');
+      load();
+    };
+    window.addEventListener('commuto:update', handleUpdate);
+    return () => window.removeEventListener('commuto:update', handleUpdate);
   }, [isAdmin]);
 
   const employeeActions = [

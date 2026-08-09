@@ -107,7 +107,8 @@ export function LocationAutocomplete({
       if (query.length === 0) {
         const freshRecents = getRecentSearches();
         setRecents(freshRecents);
-        if (freshRecents.length > 0 || savedPlaces.length > 0) {
+        const isInputFocused = document.activeElement === dropdownRef.current?.querySelector('input');
+        if (isInputFocused && (freshRecents.length > 0 || savedPlaces.length > 0)) {
           setIsOpen(true);
         } else {
           setIsOpen(false);
