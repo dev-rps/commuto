@@ -32,7 +32,7 @@ try {
 }
 
 Write-Host "`n=== TEST 4: LOGIN with test credentials ===" -ForegroundColor Cyan
-$loginBody = @{ email = "admin@techcorp.com"; password = "Admin@1234" } | ConvertTo-Json
+$loginBody = @{ email = "admin1@techcorpsolutions.com"; password = "pass1234" } | ConvertTo-Json
 try {
     $login = Invoke-RestMethod "$BASE/auth/login" -Method POST -Body $loginBody -ContentType "application/json" -TimeoutSec 15
     Write-Host "PASS: Login succeeded for $($login.user.email) role=$($login.user.role)"
@@ -43,7 +43,7 @@ try {
 } catch {
     Write-Host "FAIL admin login: $($_.Exception.Message)"
     # Try employee login
-    $loginBody2 = @{ email = "employee@techcorp.com"; password = "Employee@1234" } | ConvertTo-Json
+    $loginBody2 = @{ email = "divya.patel0@omnisoftindia.com"; password = "pass1234" } | ConvertTo-Json
     try {
         $login2 = Invoke-RestMethod "$BASE/auth/login" -Method POST -Body $loginBody2 -ContentType "application/json" -TimeoutSec 15
         Write-Host "PASS employee login: $($login2.user.email) role=$($login2.user.role)"
@@ -155,7 +155,7 @@ try {
 }
 
 Write-Host "`n=== TEST 13: EMPLOYEE TRIES REPORTS (role check) ===" -ForegroundColor Cyan
-$empLoginBody = @{ email = "test@commuto.com"; password = "Test@1234" } | ConvertTo-Json
+$empLoginBody = @{ email = "divya.patel0@omnisoftindia.com"; password = "pass1234" } | ConvertTo-Json
 try {
     $empLogin = Invoke-RestMethod "$BASE/auth/login" -Method POST -Body $empLoginBody -ContentType "application/json" -TimeoutSec 15
     Write-Host "Employee login: $($empLogin.user.email) role=$($empLogin.user.role)"
