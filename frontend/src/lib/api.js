@@ -74,6 +74,10 @@ export async function updateOrganizationPolicy(payload) {
   if (USE_MOCKS) { await delay(); return { message: 'Organization policy updated', organization: { ...mock.organizations[0], ...payload } }; }
   const { data } = await api.patch('/organizations/my/policy', payload); return data;
 }
+export async function completeProfile(payload) {
+  if (USE_MOCKS) { await delay(); activeMockUser = { ...activeMockUser, ...payload }; return activeMockUser; }
+  const { data } = await api.post('/auth/complete-profile', payload); return data.user;
+}
 
 const MOCK_RIDES_KEY = 'commuto_mock_rides';
 
