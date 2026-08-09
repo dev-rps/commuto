@@ -140,7 +140,7 @@ class PaymentService {
         await tx.walletTransaction.create({
           data: {
             userId: driverId,
-            type: "RIDE_PAYMENT",
+            type: "RIDE_EARNING",
             amount,
             balanceAfter: newDriverBalance,
           },
@@ -295,7 +295,7 @@ class PaymentService {
       await tx.walletTransaction.create({
         data: {
           userId: driverId,
-          type: "RIDE_PAYMENT",
+          type: "RIDE_EARNING",
           amount,
           balanceAfter: newDriverBalance,
         },

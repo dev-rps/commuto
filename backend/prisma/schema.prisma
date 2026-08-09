@@ -43,6 +43,7 @@ enum PaymentStatus {
 enum WalletTxnType {
   RECHARGE
   RIDE_PAYMENT
+  RIDE_EARNING
   REFUND
 }
 
