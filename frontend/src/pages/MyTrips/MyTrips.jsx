@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Navigation, X, ArrowRight, MessageSquare, Filter } from 'lucide-react';
-import { getMyBookings, getMyRides, cancelBooking } from '../../lib/api';
+import { getMyBookings, getMyRides, cancelBooking, updateRideStatus } from '../../lib/api';
 import { StatusBadge, EmptyState } from '../../components';
 import { SkeletonCard } from '../../components/Skeleton';
 import { formatDateTime, formatINR, timeUntil } from '../../lib/utils';
@@ -18,6 +18,7 @@ export default function MyTrips() {
   const [tab, setTab]           = useState('booked');
   const [filter, setFilter]     = useState('All');
   const [cancelling, setCancelling] = useState(null);
+  const [cancellingRide, setCancellingRide] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -38,6 +39,18 @@ export default function MyTrips() {
     } catch (err) {
       toast.error(err.message || 'Failed to cancel booking');
     } finally { setCancelling(null); }
+  };
+
+  const handleCancelRide = async (rideId) => {
+    if (!window.confirm('Are you sure you want to cancel this ride?')) return;
+    setCancellingRide(rideId);
+    try {
+      await updateRideStatus(rideId, 'CANCELLED');
+      setOffered((prev) => prev.map((r) => r.id === rideId ? { ...r, status: 'CANCELLED' } : r));
+      toast.success('Ride cancelled successfully');
+    } catch (err) {
+      toast.error(err.message || 'Failed to cancel ride');
+    } finally { setCancellingRide(null); }
   };
 
   const showList = tab === 'booked' ? trips : offered;
@@ -143,7 +156,7 @@ export default function MyTrips() {
                 </div>
 
                 {/* OTP Display for Passengers */}
-                {isTrip && item.otp && rideStatus !== 'COMPLETED' && rideStatus !== 'CANCELLED' && (
+                {isTrip && item.otp && status !== 'CANCELLED' && rideStatus !== 'COMPLETED' && rideStatus !== 'CANCELLED' && (
                   <div className="mb-4 p-3 bg-neutral-50 rounded-xl border border-neutral-100 flex items-center justify-between">
                     <div className="text-sm text-neutral-600">Give this OTP to the driver to start the ride:</div>
                     <div className="text-xl font-bold tracking-[0.2em] bg-white px-3 py-1 rounded-lg border border-neutral-200">
@@ -180,6 +193,13 @@ export default function MyTrips() {
                         className="btn-secondary text-error border-error/30 hover:bg-error/5">
                         <X className="w-4 h-4" />
                         {cancelling === item.id ? 'Cancelling...' : 'Cancel'}
+                      </button>
+                    )}
+                    {!isTrip && (rideStatus === 'PUBLISHED' || rideStatus === 'AT_PICKUP') && (item.bookings?.filter(b => b.status !== 'CANCELLED').length || 0) === 0 && (
+                      <button onClick={() => handleCancelRide(item.id)} disabled={cancellingRide === item.id}
+                        className="btn-secondary text-error border-error/30 hover:bg-error/5">
+                        <X className="w-4 h-4" />
+                        {cancellingRide === item.id ? 'Cancelling...' : 'Cancel Ride'}
                       </button>
                     )}
                     {isTrip && status === 'PAYMENT_PENDING' && (

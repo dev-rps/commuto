@@ -206,6 +206,28 @@ class RideService {
       throw error;
     }
 
+    if (ride.status === "COMPLETED" || ride.status === "CANCELLED") {
+      const error = new Error(`Cannot change status of a ${ride.status} ride`);
+      error.status = 400;
+      throw error;
+    }
+
+    if (newStatus === "CANCELLED") {
+      if (ride.status === "IN_PROGRESS") {
+        const error = new Error("Cannot cancel an in-progress ride");
+        error.status = 400;
+        throw error;
+      }
+      const activeBookings = (ride.bookings || []).filter(
+        (b) => b.status !== "CANCELLED"
+      );
+      if (activeBookings.length > 0) {
+        const error = new Error("Cannot cancel ride: there are active bookings");
+        error.status = 400;
+        throw error;
+      }
+    }
+
     const updatedRide = await rideRepository.updateRide(rideId, { status: newStatus });
 
     // Transition bookings to PAYMENT_PENDING if ride is COMPLETED

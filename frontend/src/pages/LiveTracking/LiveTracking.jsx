@@ -76,6 +76,7 @@ export default function LiveTracking() {
   const [paying, setPaying]                     = useState(false);
 
   const animatedPos = useSmoothPosition(currentPos);
+  const isDriver = !!(user?.id && ride?.driverId && user.id === ride.driverId);
 
 
   useEffect(() => {
@@ -171,10 +172,10 @@ export default function LiveTracking() {
   if (!ride) return <div className="text-center py-8 text-neutral-500">Ride not found</div>;
 
   const distanceLeft = animatedPos ? haversineKm(animatedPos.lat, animatedPos.lng, ride.destLat, ride.destLng).toFixed(1) : '—';
-  const isDriver = user?.id === ride.driverId;
   const myBooking = ride.bookings?.find(b => b.passengerId === user?.id);
+  const activeBookingsCount = ride.bookings?.filter(b => b.status !== 'CANCELLED').length || 0;
   const amountDue = isDriver 
-    ? (ride.farePerSeat * (ride.bookings?.filter(b => b.status === 'BOOKED' || b.status === 'PAYMENT_COMPLETED').reduce((acc, curr) => acc + curr.seats, 0) || 0)) 
+    ? (ride.farePerSeat * (ride.bookings?.filter(b => b.status === 'BOOKED' || b.status === 'PAYMENT_COMPLETED').reduce((acc, curr) => acc + curr.seatsBooked, 0) || 0)) 
     : (myBooking?.totalFare || ride.farePerSeat);
 
   return (
@@ -214,7 +215,13 @@ export default function LiveTracking() {
           )}
           <div>
             <p className={`font-bold ${ride.status === 'IN_PROGRESS' ? 'text-white' : 'text-neutral-900'}`}>
-              {ride.status === 'IN_PROGRESS' ? 'Trip in progress' : ride.status === 'COMPLETED' ? 'Trip completed' : 'Trip scheduled'}
+              {ride.status === 'IN_PROGRESS' 
+                ? 'Trip in progress' 
+                : ride.status === 'COMPLETED' 
+                  ? 'Trip completed' 
+                  : ride.status === 'CANCELLED' 
+                    ? 'Trip cancelled' 
+                    : 'Trip scheduled'}
             </p>
             <p className={`text-sm mt-0.5 ${ride.status === 'IN_PROGRESS' ? 'text-blue-200' : 'text-neutral-500'}`}>
               {ride.pickupLoc} → {ride.destination}
@@ -276,7 +283,7 @@ export default function LiveTracking() {
             </button>
           )}
 
-          {ride.status === 'AT_PICKUP' && (
+          {ride.status === 'AT_PICKUP' && activeBookingsCount > 0 && (
             <div className="space-y-3">
               <input
                 type="text"
@@ -303,6 +310,31 @@ export default function LiveTracking() {
                 Verify OTP & Start Ride
               </button>
             </div>
+          )}
+
+          {ride.status === 'AT_PICKUP' && activeBookingsCount === 0 && (
+            <p className="text-sm text-neutral-500 text-center py-2 bg-neutral-100/60 rounded-xl mb-3 border border-neutral-200/40">
+              No active bookings yet. Waiting for passengers...
+            </p>
+          )}
+
+          {activeBookingsCount === 0 && (ride.status === 'PUBLISHED' || ride.status === 'AT_PICKUP') && (
+            <button
+              onClick={async () => {
+                if (window.confirm('Are you sure you want to cancel this ride?')) {
+                  try {
+                    const updated = await updateRideStatus(ride.id, 'CANCELLED');
+                    setRide({ ...ride, status: updated.status });
+                    toast.success('Ride cancelled successfully');
+                  } catch (e) {
+                    toast.error(e.response?.data?.error || e.message || 'Failed to cancel ride');
+                  }
+                }
+              }}
+              className="btn-secondary text-error border-error/30 hover:bg-error/5 w-full mt-3 font-semibold"
+            >
+              Cancel Ride
+            </button>
           )}
 
           {ride.status === 'IN_PROGRESS' && (
@@ -366,7 +398,7 @@ export default function LiveTracking() {
                   {!isDriver && myBooking && (
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-neutral-500">Seats Booked</span>
-                      <span className="font-medium">{myBooking.seats}</span>
+                      <span className="font-medium">{myBooking.seatsBooked}</span>
                     </div>
                   )}
                 </div>
