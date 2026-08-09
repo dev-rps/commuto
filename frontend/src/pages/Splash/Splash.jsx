@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
-  Sun,
-  Moon,
   Menu,
   X,
   Search,
@@ -39,20 +37,12 @@ export default function Splash() {
     }
   }, [user, loading, navigate]);
 
-  // Dark/Light Theme State
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || 'light';
-  });
-
+  // Force Light Theme for Landing Page
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    root.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+  }, []);
 
   // Mobile navigation drawer state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -119,9 +109,8 @@ export default function Splash() {
       <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-primary-400/10 dark:bg-primary-500/5 blur-3xl pointer-events-none -z-10" />
       <div className="absolute top-1/3 left-0 w-[400px] h-[400px] rounded-full bg-accent-400/10 dark:bg-accent-500/5 blur-3xl pointer-events-none -z-10" />
 
-      {/* ── HEADER & NAVIGATION ─────────────────────────────── */}
       <header className="sticky top-0 z-50 w-full border-b border-neutral-100 bg-white/80 dark:border-neutral-800/80 dark:bg-neutral-950/80 backdrop-blur-md transition-colors duration-300">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-10 lg:px-16 xl:px-24">
           
           {/* Logo & Brand */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
@@ -161,15 +150,6 @@ export default function Splash() {
           {/* Header Action Buttons */}
           <div className="hidden md:flex items-center gap-4">
             
-            {/* Theme Toggle Button */}
-            <button
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-              className="p-2 rounded-xl border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:bg-neutral-800 dark:text-neutral-300 transition-all shadow-sm"
-              aria-label="Toggle theme"
-            >
-              {theme === 'light' ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
-            </button>
-
             {/* Login & Get Started */}
             <button
               onClick={() => navigate('/login', { state: { mode: 'login' } })}
@@ -185,17 +165,8 @@ export default function Splash() {
             </button>
           </div>
 
-          {/* Mobile Menu & Theme Controls */}
+          {/* Mobile Menu Controls */}
           <div className="flex items-center gap-3 md:hidden">
-            {/* Mobile Theme Toggle */}
-            <button
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-              className="p-2 rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 transition-all"
-              aria-label="Toggle theme"
-            >
-              {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-            </button>
-
             {/* Menu Trigger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -244,9 +215,8 @@ export default function Splash() {
         </div>
       )}
 
-      {/* ── HERO SECTION ───────────────────────────────────── */}
       <section className="relative pt-8 pb-16 lg:pt-16 lg:pb-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-24">
           <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
             
             {/* Left Hero Content */}
@@ -477,7 +447,7 @@ export default function Splash() {
 
       {/* ── HOW IT WORKS ───────────────────────────────────── */}
       <section id="how-it-works" className="py-20 bg-neutral-50 dark:bg-neutral-900 transition-colors duration-300">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-24">
           
           {/* Header */}
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -550,7 +520,7 @@ export default function Splash() {
 
       {/* ── SAFETY FIRST ───────────────────────────────────── */}
       <section id="safety" className="py-20 bg-white dark:bg-neutral-950 transition-colors duration-300">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-24">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             
             {/* Left Content */}
@@ -676,7 +646,7 @@ export default function Splash() {
 
       {/* ── CORE FEATURES ───────────────────────────────────── */}
       <section id="features" className="py-20 bg-neutral-50 dark:bg-neutral-900 transition-colors duration-300">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-24">
           
           {/* Header */}
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -767,7 +737,7 @@ export default function Splash() {
 
       {/* ── TESTIMONIALS / RIDER SCENARIOS ──────────────────── */}
       <section id="scenarios" className="py-20 bg-white dark:bg-neutral-950 transition-colors duration-300">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-24">
           
           {/* Header */}
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -856,7 +826,7 @@ export default function Splash() {
 
       {/* ── FOOTER ─────────────────────────────────────────── */}
       <footer className="bg-neutral-900 dark:bg-neutral-950 text-neutral-400 border-t border-neutral-800 py-12 lg:py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16 xl:px-24">
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12 mb-12">
             
