@@ -7,16 +7,16 @@
 
 @layer base {
   body {
-    @apply font-sans bg-neutral-100 text-neutral-900 antialiased;
+    @apply font-sans bg-neutral-100 text-neutral-900 antialiased dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200;
     margin: 0;
   }
   * { box-sizing: border-box; }
 
   /* Smooth scrollbar */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { @apply bg-neutral-100; }
-  ::-webkit-scrollbar-thumb { @apply bg-neutral-300 rounded-full; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-neutral-400; }
+  ::-webkit-scrollbar-track { @apply bg-neutral-100 dark:bg-slate-900; }
+  ::-webkit-scrollbar-thumb { @apply bg-neutral-300 dark:bg-slate-700 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-neutral-400 dark:bg-slate-600; }
 }
 
 @layer components {
@@ -41,11 +41,11 @@
   }
 
   .btn-secondary {
-    @apply btn bg-white border border-neutral-200 text-neutral-700;
+    @apply btn bg-white dark:bg-slate-800 border border-neutral-200 dark:border-slate-700 text-neutral-700 dark:text-slate-200;
     box-shadow: var(--shadow-xs);
   }
   .btn-secondary:not(:disabled):hover {
-    @apply bg-neutral-50 border-neutral-300;
+    @apply bg-neutral-50 dark:bg-slate-700 border-neutral-300 dark:border-slate-600;
     box-shadow: var(--shadow-sm);
   }
 
@@ -63,25 +63,25 @@
   .btn-danger:not(:disabled):hover { @apply opacity-90; }
 
   .btn-ghost {
-    @apply btn text-neutral-600;
+    @apply btn text-neutral-600 dark:text-slate-300;
   }
-  .btn-ghost:not(:disabled):hover { @apply bg-neutral-100 text-neutral-900; }
+  .btn-ghost:not(:disabled):hover { @apply bg-neutral-100 dark:bg-slate-800 text-neutral-900 dark:text-slate-100; }
 
   /* ── Inputs ────────────────────────────────────────────── */
   .input {
-    @apply w-full rounded-lg border border-neutral-200 bg-white px-3.5 py-2.5 text-sm
-           text-neutral-900 placeholder:text-neutral-400
+    @apply w-full rounded-lg border border-neutral-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm
+           text-neutral-900 dark:text-slate-100 placeholder:text-neutral-400 dark:placeholder:text-slate-500
            focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
            transition-all;
     box-shadow: var(--shadow-xs);
   }
-  .input:hover:not(:focus) { @apply border-neutral-300; }
+  .input:hover:not(:focus) { @apply border-neutral-300 dark:border-slate-600; }
   .input-error { @apply border-error focus:ring-error/20 focus:border-error; }
-  .label { @apply block text-sm font-semibold text-neutral-700 mb-1.5; }
+  .label { @apply block text-sm font-semibold text-neutral-700 dark:text-slate-300 mb-1.5; }
 
   /* ── Cards ─────────────────────────────────────────────── */
   .card {
-    @apply bg-white rounded-xl border border-neutral-200/80;
+    @apply bg-white dark:bg-slate-900 rounded-xl border border-neutral-200/80 dark:border-slate-800;
     box-shadow: var(--shadow-sm);
   }
   .card-hover {
@@ -133,15 +133,15 @@
 
   /* ── Skeleton ──────────────────────────────────────────── */
   .skeleton {
-    @apply bg-neutral-200 rounded-lg animate-pulse;
+    @apply bg-neutral-200 dark:bg-slate-800 rounded-lg animate-pulse;
   }
 
   /* ── Section header ────────────────────────────────────── */
   .section-title {
-    @apply text-lg font-bold text-neutral-900;
+    @apply text-lg font-bold text-neutral-900 dark:text-slate-100;
   }
   .section-desc {
-    @apply text-sm text-neutral-500 mt-0.5;
+    @apply text-sm text-neutral-500 dark:text-slate-400 mt-0.5;
   }
 
   /* ── Tabs ──────────────────────────────────────────────── */

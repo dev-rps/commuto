@@ -77,7 +77,7 @@ export function AppShell() {
     : location.pathname.startsWith('/chat') ? 'Chat' : 'Commuto');
 
   return (
-    <div className="flex h-screen overflow-hidden bg-neutral-100">
+    <div className="flex h-screen overflow-hidden bg-neutral-100 dark:bg-slate-950 transition-colors">
       {/* Desktop sidebar */}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -93,7 +93,7 @@ export function AppShell() {
 
         {/* Mobile floating bottom navigation */}
         <nav 
-          className="lg:hidden fixed bottom-3 inset-x-3.5 z-30 bg-white/90 backdrop-blur-xl border border-white/80 rounded-2xl p-1.5 transition-all"
+          className="lg:hidden fixed bottom-3 inset-x-3.5 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/80 dark:border-slate-800 rounded-2xl p-1.5 transition-all"
           style={{ boxShadow: 'var(--shadow-float)' }}
         >
           <div className="flex items-center justify-around relative">
@@ -107,25 +107,25 @@ export function AppShell() {
                   onClick={() => navigate(item.to)}
                   className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all duration-200 active:scale-95 min-w-[60px] ${
                     isActive
-                      ? 'text-primary font-bold'
-                      : 'text-neutral-500 hover:text-neutral-800 font-medium'
+                      ? 'text-primary dark:text-blue-400 font-bold'
+                      : 'text-neutral-500 dark:text-slate-400 hover:text-neutral-800 dark:hover:text-slate-200 font-medium'
                   }`}
                 >
                   {/* Active highlight background pill */}
                   {isActive && (
                     <span 
-                      className="absolute inset-0 bg-primary-50/90 rounded-xl border border-primary-200/50 shadow-xs -z-0 animate-scale-in" 
+                      className="absolute inset-0 bg-primary-50/90 dark:bg-blue-950/80 rounded-xl border border-primary-200/50 dark:border-blue-800/50 shadow-xs -z-0 animate-scale-in" 
                     />
                   )}
 
                   <div className="relative z-10 flex flex-col items-center gap-0.5">
-                    <item.icon className={`w-5 h-5 transition-transform duration-200 ${isActive ? 'scale-110 text-primary' : 'text-neutral-400'}`} />
+                    <item.icon className={`w-5 h-5 transition-transform duration-200 ${isActive ? 'scale-110 text-primary dark:text-blue-400' : 'text-neutral-400 dark:text-slate-500'}`} />
                     <span className="text-[10px] tracking-tight leading-none mt-0.5">{item.label}</span>
                   </div>
 
                   {/* Active indicator dot */}
                   {isActive && (
-                    <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-primary animate-pulse" />
+                    <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-primary dark:bg-blue-400 animate-pulse" />
                   )}
                 </button>
               );

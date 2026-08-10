@@ -5,7 +5,7 @@ import { SocketProvider } from './context/SocketContext';
 import { ToastProvider } from './context/ToastContext';
 import { UnreadProvider } from './context/UnreadContext';
 import { AppShell } from './components/layout/AppShell';
-import { Spinner } from './components';
+import { InteractiveColdStartLoader } from './components/InteractiveColdStartLoader';
 
 const Splash          = lazy(() => import('./pages/Splash/Splash'));
 const Login           = lazy(() => import('./pages/Login/Login'));
@@ -30,9 +30,23 @@ const SuperAdminDashboard = lazy(() => import('./pages/SuperAdmin/SuperAdminDash
 const CompanyAdminDashboard = lazy(() => import('./pages/CompanyAdmin/CompanyAdminDashboard'));
 
 function PageLoader() {
+  return <InteractiveColdStartLoader />;
+}
+
+function PageContentFallback() {
   return (
-    <div className="flex items-center justify-center h-screen bg-neutral-50">
-      <Spinner />
+    <div className="max-w-4xl mx-auto space-y-4 py-2 animate-fade-in">
+      <div className="space-y-1.5 mb-6">
+        <div className="h-7 w-48 bg-neutral-200 dark:bg-slate-800 rounded-xl animate-pulse" />
+        <div className="h-4 w-64 bg-neutral-100 dark:bg-slate-800/60 rounded-lg animate-pulse" />
+      </div>
+      <div className="card p-6 space-y-4 border border-neutral-200/80 dark:border-slate-800">
+        <div className="h-28 bg-neutral-100 dark:bg-slate-800/80 rounded-xl animate-pulse" />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="h-12 bg-neutral-100 dark:bg-slate-800/80 rounded-xl animate-pulse" />
+          <div className="h-12 bg-neutral-100 dark:bg-slate-800/80 rounded-xl animate-pulse" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -73,24 +87,24 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route path="/superadmin"      element={<Suspense fallback={<PageLoader />}><SuperAdminDashboard /></Suspense>} />
-        <Route path="/admin-dashboard" element={<Suspense fallback={<PageLoader />}><CompanyAdminDashboard /></Suspense>} />
-        <Route path="/dashboard"      element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
-        <Route path="/rides/find"     element={<Suspense fallback={<PageLoader />}><FindRide /></Suspense>} />
-        <Route path="/rides/confirm"  element={<Suspense fallback={<PageLoader />}><RouteConfirmation /></Suspense>} />
-        <Route path="/rides/available" element={<Suspense fallback={<PageLoader />}><AvailableRides /></Suspense>} />
-        <Route path="/rides/offer"    element={<Suspense fallback={<PageLoader />}><OfferRide /></Suspense>} />
-        <Route path="/vehicles"       element={<Suspense fallback={<PageLoader />}><MyVehicle /></Suspense>} />
-        <Route path="/trips"          element={<Suspense fallback={<PageLoader />}><MyTrips /></Suspense>} />
-        <Route path="/tracking/:rideId" element={<Suspense fallback={<PageLoader />}><LiveTracking /></Suspense>} />
-        <Route path="/chat/:rideId"   element={<Suspense fallback={<PageLoader />}><Chat /></Suspense>} />
-        <Route path="/wallet"         element={<Suspense fallback={<PageLoader />}><PaymentWallet /></Suspense>} />
-        <Route path="/rides/history"  element={<Suspense fallback={<PageLoader />}><RideHistory /></Suspense>} />
-        <Route path="/reports"        element={<Suspense fallback={<PageLoader />}><Reports /></Suspense>} />
-        <Route path="/leaderboard"    element={<Suspense fallback={<PageLoader />}><Leaderboard /></Suspense>} />
-        <Route path="/settings"       element={<Suspense fallback={<PageLoader />}><Settings /></Suspense>} />
-        <Route path="/help"           element={<Suspense fallback={<PageLoader />}><HelpSupport /></Suspense>} />
-        <Route path="/places"         element={<Suspense fallback={<PageLoader />}><SavedPlaces /></Suspense>} />
+        <Route path="/superadmin"      element={<Suspense fallback={<PageContentFallback />}><SuperAdminDashboard /></Suspense>} />
+        <Route path="/admin-dashboard" element={<Suspense fallback={<PageContentFallback />}><CompanyAdminDashboard /></Suspense>} />
+        <Route path="/dashboard"      element={<Suspense fallback={<PageContentFallback />}><Dashboard /></Suspense>} />
+        <Route path="/rides/find"     element={<Suspense fallback={<PageContentFallback />}><FindRide /></Suspense>} />
+        <Route path="/rides/confirm"  element={<Suspense fallback={<PageContentFallback />}><RouteConfirmation /></Suspense>} />
+        <Route path="/rides/available" element={<Suspense fallback={<PageContentFallback />}><AvailableRides /></Suspense>} />
+        <Route path="/rides/offer"    element={<Suspense fallback={<PageContentFallback />}><OfferRide /></Suspense>} />
+        <Route path="/vehicles"       element={<Suspense fallback={<PageContentFallback />}><MyVehicle /></Suspense>} />
+        <Route path="/trips"          element={<Suspense fallback={<PageContentFallback />}><MyTrips /></Suspense>} />
+        <Route path="/tracking/:rideId" element={<Suspense fallback={<PageContentFallback />}><LiveTracking /></Suspense>} />
+        <Route path="/chat/:rideId"   element={<Suspense fallback={<PageContentFallback />}><Chat /></Suspense>} />
+        <Route path="/wallet"         element={<Suspense fallback={<PageContentFallback />}><PaymentWallet /></Suspense>} />
+        <Route path="/rides/history"  element={<Suspense fallback={<PageContentFallback />}><RideHistory /></Suspense>} />
+        <Route path="/reports"        element={<Suspense fallback={<PageContentFallback />}><Reports /></Suspense>} />
+        <Route path="/leaderboard"    element={<Suspense fallback={<PageContentFallback />}><Leaderboard /></Suspense>} />
+        <Route path="/settings"       element={<Suspense fallback={<PageContentFallback />}><Settings /></Suspense>} />
+        <Route path="/help"           element={<Suspense fallback={<PageContentFallback />}><HelpSupport /></Suspense>} />
+        <Route path="/places"         element={<Suspense fallback={<PageContentFallback />}><SavedPlaces /></Suspense>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

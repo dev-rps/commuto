@@ -522,10 +522,10 @@ export default function LiveTracking() {
       )}
 
       {/* Floating Emergency SOS Button */}
-      <div className="fixed bottom-6 right-6 z-40">
+      <div className="fixed bottom-20 lg:bottom-6 right-4 lg:right-6 z-40">
         <button
           onClick={() => setShowSosModal(true)}
-          className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-3 rounded-full shadow-lg shadow-red-600/40 border-2 border-white transition-all transform hover:scale-105 animate-pulse"
+          className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-3 rounded-full shadow-lg shadow-red-600/40 border-2 border-white transition-all transform hover:scale-105"
         >
           <ShieldAlert className="w-5 h-5 text-white" />
           <span>SOS SAFETY</span>

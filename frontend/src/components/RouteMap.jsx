@@ -26,7 +26,7 @@ export function createPulseIcon(color = '#10B981') {
   });
 }
 
-export function RouteMap({ pickupLat, pickupLng, destLat, destLng, movingLat, movingLng, height = '400px', zoom = 12 }) {
+export function RouteMap({ pickupLat, pickupLng, destLat, destLng, movingLat, movingLng, height = '280px', zoom = 12 }) {
   const centerLat = (pickupLat + destLat) / 2;
   const centerLng = (pickupLng + destLng) / 2;
 
@@ -66,7 +66,7 @@ export function RouteMap({ pickupLat, pickupLng, destLat, destLng, movingLat, mo
   const isRoadRoute = roadPositions != null;
 
   return (
-    <MapContainer center={[centerLat, centerLng]} zoom={zoom} style={{ height, width: '100%' }} scrollWheelZoom>
+    <MapContainer center={[centerLat, centerLng]} zoom={zoom} style={{ height, width: '100%' }} scrollWheelZoom={false}>
       {/* OpenStreetMap tiles — free, no API key */}
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

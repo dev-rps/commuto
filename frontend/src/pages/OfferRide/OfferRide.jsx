@@ -190,26 +190,34 @@ export default function OfferRide() {
       ) : (
         <>
           {/* Step indicator */}
-          <div className="flex items-center gap-0 mb-6">
-            {STEPS.map((s, i) => (
-              <div key={s} className="flex items-center flex-1">
-                <div className="flex flex-col items-center">
+          <div className="card p-4 mb-6">
+            <div className="flex items-center justify-between relative max-w-md mx-auto">
+              {/* Connector track background line */}
+              <div className="absolute top-4 left-8 right-8 h-0.5 bg-neutral-200 dark:bg-slate-700 z-0" />
+              <div
+                className="absolute top-4 left-8 h-0.5 bg-primary transition-all duration-300 z-0"
+                style={{ width: `${(step / (STEPS.length - 1)) * 82}%` }}
+              />
+
+              {STEPS.map((s, i) => (
+                <div
+                  key={s}
+                  className="flex flex-col items-center relative z-10 bg-white dark:bg-slate-900 px-2 cursor-pointer"
+                  onClick={() => i < step && setStep(i)}
+                >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                      i < step ? 'bg-accent text-white' :
-                      i === step ? 'bg-primary text-white shadow-glow' :
-                      'bg-neutral-100 text-neutral-400'
+                      i < step ? 'bg-emerald-500 text-white shadow-xs' :
+                      i === step ? 'bg-primary text-white ring-4 ring-primary/20 shadow-xs' :
+                      'bg-neutral-100 dark:bg-slate-800 text-neutral-400 border border-neutral-200 dark:border-slate-700'
                     }`}
                   >
                     {i < step ? '✓' : i + 1}
                   </div>
-                  <span className={`text-[10px] mt-1 font-semibold ${i === step ? 'text-primary' : 'text-neutral-400'}`}>{s}</span>
+                  <span className={`text-xs mt-1.5 font-semibold ${i === step ? 'text-primary dark:text-blue-400 font-bold' : i < step ? 'text-neutral-700 dark:text-slate-300' : 'text-neutral-400 dark:text-slate-500'}`}>{s}</span>
                 </div>
-                {i < STEPS.length - 1 && (
-                  <div className={`h-0.5 flex-1 mx-2 mb-4 transition-colors ${i < step ? 'bg-accent' : 'bg-neutral-200'}`} />
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           <div className="card p-6">
