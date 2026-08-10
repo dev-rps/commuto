@@ -24,18 +24,24 @@ export function Topbar({ onMenuClick, title }) {
   }, []);
 
   return (
-    <header className="h-16 bg-white/90 backdrop-blur-sm border-b border-neutral-200/80 flex items-center justify-between px-4 lg:px-6 shrink-0 sticky top-0 z-20">
+    <header className="h-16 bg-white/85 backdrop-blur-xl border-b border-neutral-200/70 flex items-center justify-between px-3.5 sm:px-6 shrink-0 sticky top-0 z-20 transition-all">
       {/* Left: menu + page title */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 rounded-lg hover:bg-neutral-100 text-neutral-600 transition-colors"
+          className="lg:hidden p-2 rounded-xl bg-neutral-100/80 hover:bg-neutral-200 text-neutral-700 active:scale-95 transition-all shadow-xs"
           aria-label="Open menu"
         >
           <Menu className="w-5 h-5" />
         </button>
         <div>
-          <h2 className="text-sm font-bold text-neutral-900 leading-none">{title}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm sm:text-base font-extrabold text-neutral-900 leading-none tracking-tight">{title}</h2>
+            <span className="lg:hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Active
+            </span>
+          </div>
           {user?.organization?.name && (
             <p className="text-[11px] text-neutral-400 mt-0.5 font-medium leading-none hidden sm:block">
               {user.organization.name}
@@ -48,24 +54,24 @@ export function Topbar({ onMenuClick, title }) {
       <div className="flex items-center gap-2">
         {/* Notification bell */}
         <button
-          className="relative p-2 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 transition-colors"
+          className="relative p-2 rounded-xl bg-neutral-100/80 hover:bg-neutral-200 text-neutral-600 hover:text-neutral-900 active:scale-95 transition-all shadow-xs"
           aria-label="Notifications"
         >
           <Bell className="w-4.5 h-4.5" />
-          <span
-            className="absolute top-2 right-2 w-2 h-2 rounded-full border-2 border-white"
-            style={{ background: 'var(--color-accent)' }}
-          />
+          <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-white" />
+          </span>
         </button>
 
         {/* Avatar + dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen((v) => !v)}
-            className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg hover:bg-neutral-100 transition-colors"
+            className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl bg-neutral-100/60 hover:bg-neutral-100 active:scale-95 transition-all border border-neutral-200/60"
           >
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm"
               style={{ background: 'var(--gradient-primary)' }}
             >
               {initials}

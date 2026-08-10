@@ -249,3 +249,24 @@
 .route-connector {
   @apply w-0.5 h-5 bg-neutral-200 my-0.5;
 }
+
+/* ── Mobile Utilities ─────────────────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes float-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-float { animation: float-subtle 4s ease-in-out infinite; }
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
+}
+.animate-pulse-glow { animation: pulse-glow 2.5s infinite; }
+
+.safe-bottom-space {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 16px));
+}
+

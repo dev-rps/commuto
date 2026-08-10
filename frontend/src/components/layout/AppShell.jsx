@@ -85,32 +85,48 @@ export function AppShell() {
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar onMenuClick={() => setSidebarOpen(true)} title={title} />
 
-        <main className="flex-1 overflow-y-auto pb-20 lg:pb-6">
-          <div className="max-w-7xl mx-auto px-4 lg:px-6 py-5 animate-fade-up">
+        <main className="flex-1 overflow-y-auto pb-28 lg:pb-6">
+          <div className="max-w-7xl mx-auto px-3.5 sm:px-6 py-4 sm:py-6 animate-fade-up">
             <Outlet />
           </div>
         </main>
 
-        {/* Mobile bottom navigation */}
-        <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-sm border-t border-neutral-200 z-30 safe-area-bottom">
-          <div className="flex items-center justify-around px-2 py-2">
+        {/* Mobile floating bottom navigation */}
+        <nav 
+          className="lg:hidden fixed bottom-3 inset-x-3.5 z-30 bg-white/90 backdrop-blur-xl border border-white/80 rounded-2xl p-1.5 transition-all"
+          style={{ boxShadow: 'var(--shadow-float)' }}
+        >
+          <div className="flex items-center justify-around relative">
             {mobileNav.map((item) => {
               const isActive = location.pathname === item.to
                 || (item.to !== '/dashboard' && location.pathname.startsWith(item.to.replace('/find','').replace('/offer','')));
+              
               return (
                 <button
                   key={item.to}
                   onClick={() => navigate(item.to)}
-                  className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-0 ${
+                  className={`relative flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all duration-200 active:scale-95 min-w-[60px] ${
                     isActive
-                      ? 'text-primary'
-                      : 'text-neutral-400'
+                      ? 'text-primary font-bold'
+                      : 'text-neutral-500 hover:text-neutral-800 font-medium'
                   }`}
                 >
-                  <div className={`p-1.5 rounded-xl transition-all ${isActive ? 'bg-primary-50' : ''}`}>
-                    <item.icon className={`w-5 h-5 ${isActive ? 'text-primary' : ''}`} />
+                  {/* Active highlight background pill */}
+                  {isActive && (
+                    <span 
+                      className="absolute inset-0 bg-primary-50/90 rounded-xl border border-primary-200/50 shadow-xs -z-0 animate-scale-in" 
+                    />
+                  )}
+
+                  <div className="relative z-10 flex flex-col items-center gap-0.5">
+                    <item.icon className={`w-5 h-5 transition-transform duration-200 ${isActive ? 'scale-110 text-primary' : 'text-neutral-400'}`} />
+                    <span className="text-[10px] tracking-tight leading-none mt-0.5">{item.label}</span>
                   </div>
-                  <span className="text-[10px] font-semibold leading-none">{item.label}</span>
+
+                  {/* Active indicator dot */}
+                  {isActive && (
+                    <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-primary animate-pulse" />
+                  )}
                 </button>
               );
             })}
