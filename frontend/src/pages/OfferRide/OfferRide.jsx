@@ -258,7 +258,40 @@ export default function OfferRide() {
             {/* Step 1: Route */}
             {step === 1 && (
               <div className="space-y-4">
-                <h3 className="section-title">Set Your Route</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="section-title">Set Your Route</h3>
+                  <span className="text-xs text-neutral-400 dark:text-slate-500">Tap route to autofill</span>
+                </div>
+
+                {/* Quick route chips */}
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { title: 'Barasat ➔ Howrah', p: 'Barasat, Kolkata Metropolitan Area, West Bengal', pLat: 22.7233, pLng: 88.4803, d: 'Howrah, Kolkata Metropolitan Area, West Bengal', dLat: 22.5958, dLng: 88.2636 },
+                    { title: 'Koramangala ➔ Electronic City', p: 'Koramangala 5th Block, Bangalore', pLat: 12.9352, pLng: 77.6245, d: 'Electronic City Phase 1, Bangalore', dLat: 12.8399, dLng: 77.677 },
+                    { title: 'Whitefield ➔ Indiranagar', p: 'Whitefield ITPB Main Gate, Bangalore', pLat: 12.9847, pLng: 77.7499, d: '100ft Road, Indiranagar, Bangalore', dLat: 12.9784, dLng: 77.6408 },
+                  ].map((r) => (
+                    <button
+                      key={r.title}
+                      type="button"
+                      onClick={() => {
+                        setForm((prev) => ({
+                          ...prev,
+                          pickupLoc: r.p, pickupLat: r.pLat, pickupLng: r.pLng,
+                          destination: r.d, destLat: r.dLat, destLng: r.dLng,
+                          date: prev.date || new Date().toISOString().split('T')[0],
+                          time: prev.time || '09:00',
+                        }));
+                        setErrors({});
+                        toast.success(`Loaded route: ${r.title} 🚗`);
+                      }}
+                      className="px-3 py-1.5 rounded-full text-xs font-semibold bg-neutral-100 dark:bg-slate-800 text-neutral-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-blue-950 hover:text-primary dark:hover:text-blue-400 border border-neutral-200 dark:border-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3 h-3 text-primary shrink-0" />
+                      <span>{r.title}</span>
+                    </button>
+                  ))}
+                </div>
+
                 <div className="flex gap-3">
                   <div className="flex flex-col items-center pt-8 pb-1 shrink-0">
                     <div className="route-dot-start" />
@@ -292,7 +325,7 @@ export default function OfferRide() {
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="label">Date</label>
                     <div className="relative">
@@ -321,13 +354,13 @@ export default function OfferRide() {
               <div className="space-y-4">
                 <h3 className="section-title">Trip Details</h3>
                 {selectedVehicle && (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-neutral-50 border border-neutral-200">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-neutral-50 dark:bg-slate-800/60 border border-neutral-200 dark:border-slate-700">
                     <Car className="w-4 h-4 text-neutral-500" />
-                    <span className="text-sm font-medium text-neutral-700">{selectedVehicle.model}</span>
+                    <span className="text-sm font-medium text-neutral-700 dark:text-slate-200">{selectedVehicle.model}</span>
                     <span className="text-xs text-neutral-400">· max {selectedVehicle.seatingCap} seats</span>
                   </div>
                 )}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="label">Seats Available</label>
                     <div className="relative">
@@ -347,15 +380,16 @@ export default function OfferRide() {
                         className={`input pl-10 ${errors.farePerSeat ? 'input-error' : ''}`} />
                     </div>
                     {suggestedFare > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setForm({ ...form, farePerSeat: suggestedFare.toString() })}
-                        className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary border border-primary-200 hover:bg-primary-100 transition-all cursor-pointer shadow-xs"
-                      >
-                        <Sparkles className="w-3 h-3 text-primary shrink-0" />
-                        <span>Suggested: ₹{suggestedFare}/seat</span>
-                        <span className="text-[10px] opacity-75 font-normal ml-0.5">(Tap to autofill)</span>
-                      </button>
+                      <div className="mt-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, farePerSeat: suggestedFare.toString() })}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-50 dark:bg-blue-950 text-primary dark:text-blue-300 border border-primary-200 dark:border-blue-800 hover:bg-primary-100 transition-all cursor-pointer shadow-xs"
+                        >
+                          <Sparkles className="w-3 h-3 text-primary dark:text-blue-400 shrink-0" />
+                          <span>Suggested: ₹{suggestedFare}/seat</span>
+                        </button>
+                      </div>
                     )}
                     <FieldError error={errors.farePerSeat} />
                   </div>
@@ -373,8 +407,9 @@ export default function OfferRide() {
                         className="input pl-10" />
                     </div>
                     {!fetchingDistance && form.distanceKm && (
-                      <p className="text-[11px] text-accent-600 mt-1 flex items-center gap-1">
-                        <span>🛣</span> Road distance (auto-fetched)
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1 leading-tight">
+                        <span className="shrink-0">🛣</span>
+                        <span>Road distance (auto-fetched)</span>
                       </p>
                     )}
                   </div>

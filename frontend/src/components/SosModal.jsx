@@ -12,6 +12,13 @@ export default function SosModal({ rideId, currentLat, currentLng, onClose }) {
   const [phone, setPhone] = useState('');
 
   useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  useEffect(() => {
     getTrustedContacts()
       .then(setContacts)
       .catch(() => {})
@@ -61,22 +68,22 @@ export default function SosModal({ rideId, currentLat, currentLng, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-6 animate-scale-in relative border border-red-100">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-5 animate-scale-in relative border border-red-100 dark:border-slate-800 my-auto max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1 rounded-full text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100"
+          className="absolute top-4 right-4 p-1.5 rounded-full text-neutral-400 dark:text-slate-500 hover:text-neutral-700 dark:hover:text-slate-200 hover:bg-neutral-100 dark:hover:bg-slate-800 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 animate-pulse">
-            <ShieldAlert className="w-7 h-7" />
+          <div className="w-11 h-11 rounded-2xl bg-red-100 dark:bg-red-950/60 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
+            <ShieldAlert className="w-6 h-6 animate-pulse" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-neutral-900">Emergency SOS Safety Center</h2>
-            <p className="text-xs text-neutral-500">Live coordinates dispatch to safety desk & emergency contacts</p>
+            <h2 className="text-lg font-bold text-neutral-900 dark:text-slate-100">Emergency Safety Center</h2>
+            <p className="text-xs text-neutral-500 dark:text-slate-400">Live coordinates dispatch to safety desk & trusted contacts</p>
           </div>
         </div>
 

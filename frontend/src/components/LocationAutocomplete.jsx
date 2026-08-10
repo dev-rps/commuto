@@ -94,21 +94,21 @@ export function LocationAutocomplete({
   useEffect(() => {
     const query = (value || '').trim();
 
-    // ⚡ KEY FIX: If the user just selected an item, the parent updates `value`
-    // to the full address string. Skip the search triggered by that update.
-    if (justSelectedRef.current) {
+    // ⚡ KEY FIX: If the input is NOT active/focused, or just selected, skip search & close dropdown
+    const isInputFocused = document.activeElement === dropdownRef.current?.querySelector('input');
+    if (!isInputFocused || justSelectedRef.current) {
       justSelectedRef.current = false;
+      setIsOpen(false);
+      setSuggestions([]);
       return;
     }
 
     if (query.length < 3) {
       setSuggestions([]);
-      // Don't close if we're showing recents/saved places
-      if (query.length === 0) {
+      if (query.length === 0 && isInputFocused) {
         const freshRecents = getRecentSearches();
         setRecents(freshRecents);
-        const isInputFocused = document.activeElement === dropdownRef.current?.querySelector('input');
-        if (isInputFocused && (freshRecents.length > 0 || savedPlaces.length > 0)) {
+        if (freshRecents.length > 0 || savedPlaces.length > 0) {
           setIsOpen(true);
         } else {
           setIsOpen(false);
@@ -184,6 +184,9 @@ export function LocationAutocomplete({
 
     setIsOpen(false);
     setSuggestions([]);
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
 
     // Persist to recents
     saveRecentSearch({ address, lat, lng });

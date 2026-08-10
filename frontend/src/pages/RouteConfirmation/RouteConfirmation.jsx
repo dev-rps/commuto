@@ -29,8 +29,8 @@ export default function RouteConfirmation() {
       </div>
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <div className="card overflow-hidden">
-            <RouteMap pickupLat={pickupLat} pickupLng={pickupLng} destLat={destLat} destLng={destLng} height="450px" zoom={11} />
+          <div className="card overflow-hidden shadow-sm">
+            <RouteMap pickupLat={pickupLat} pickupLng={pickupLng} destLat={destLat} destLng={destLng} height="320px" zoom={11} />
           </div>
         </div>
         <div className="space-y-4">
